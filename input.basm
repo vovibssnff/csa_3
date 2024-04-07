@@ -1,0 +1,5 @@
+.data
+    lol = "lol"
+.ops
+    MV x1 x2
+    OUT lol

@@ -1,0 +1,30 @@
+{
+    "data": {
+        "0": 12,
+        "1": 54,
+        "2": 0
+    },
+    "ops": [
+        {
+            "inx": 0,
+            "cmd": "MV",
+            "src": {
+                "type": "reg",
+                "val": "x2"
+            },
+            "dst": {
+                "type": "reg",
+                "val": "x1"
+            }
+        },
+        {
+            "inx": 1,
+            "cmd": "OUT",
+            "src": {
+                "type": "mem",
+                "val": 0
+            },
+            "dst": null
+        }
+    ]
+}
