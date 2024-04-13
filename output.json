@@ -1,0 +1,92 @@
+{
+    "data": [
+        {
+            "mem": 0,
+            "val": "h"
+        },
+        {
+            "mem": 1,
+            "val": "i"
+        },
+        {
+            "mem": 2,
+            "val": ","
+        },
+        {
+            "mem": 3,
+            "val": " "
+        },
+        {
+            "mem": 4,
+            "val": ""
+        }
+    ],
+    "ops": [
+        {
+            "inx": 0,
+            "cmd": "LD",
+            "arg": "0",
+            "dev": ""
+        },
+        {
+            "inx": 1,
+            "cmd": "OUT",
+            "arg": "",
+            "dev": ""
+        },
+        {
+            "inx": 2,
+            "cmd": "LD",
+            "arg": "1",
+            "dev": ""
+        },
+        {
+            "inx": 3,
+            "cmd": "OUT",
+            "arg": "",
+            "dev": ""
+        },
+        {
+            "inx": 4,
+            "cmd": "IRET",
+            "arg": "",
+            "dev": ""
+        },
+        {
+            "inx": 5,
+            "cmd": "IN",
+            "arg": "",
+            "dev": ""
+        },
+        {
+            "inx": 6,
+            "cmd": "ST",
+            "arg": "4",
+            "dev": ""
+        },
+        {
+            "inx": 7,
+            "cmd": "IRET",
+            "arg": "",
+            "dev": ""
+        },
+        {
+            "inx": 8,
+            "cmd": "OUTR",
+            "arg": "5",
+            "dev": "1"
+        },
+        {
+            "inx": 9,
+            "cmd": "INR",
+            "arg": "10",
+            "dev": "0"
+        },
+        {
+            "inx": 10,
+            "cmd": "HLT",
+            "arg": "",
+            "dev": ""
+        }
+    ]
+}

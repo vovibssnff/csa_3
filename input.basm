@@ -1,5 +1,23 @@
 .data
-    lol = "lol"
+    h = "h"
+    i = "i"
+    , = ","
+    space = " "
+    kek = ""
+
+.out_handler
+    LD h
+    OUT
+    LD i
+    OUT
+    IRET
+
+.in_handler
+    IN
+    ST kek
+    IRET
+
 .ops
-    MV x1 x2
-    OUT lol
+    OUTR #1 .out_handler
+    INR #0 .in_handler
+    HLT
