@@ -33,8 +33,8 @@ type Data map[string]string
 type Operation struct {
 	Inx int    `json:"inx"`
 	Cmd string `json:"cmd"`
+	//Type string `json:"type"`
 	Arg string `json:"arg"`
-	Dev string `json:"dev"`
 }
 
 type KeyValuePair struct {

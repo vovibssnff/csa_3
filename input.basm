@@ -1,14 +1,20 @@
 .data
-    h = "h"
-    i = "i"
-    , = ","
-    space = " "
-    kek = ""
+    h = "hi, ", 0
+    kek = 8
+    i = 5
+
+.ops
+    LD 0
+    ADD 4
+    ST (kek)
+    OUTR .out_handler
+    INR .in_handler
+    HLT
 
 .out_handler
-    LD h
+    LD
     OUT
-    LD i
+    LD "azaza", 0
     OUT
     IRET
 
@@ -16,8 +22,3 @@
     IN
     ST kek
     IRET
-
-.ops
-    OUTR #1 .out_handler
-    INR #0 .in_handler
-    HLT

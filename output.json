@@ -18,75 +18,111 @@
         },
         {
             "mem": 4,
-            "val": ""
+            "val": "0"
+        },
+        {
+            "mem": 5,
+            "val": "8"
+        },
+        {
+            "mem": 6,
+            "val": "5"
+        },
+        {
+            "mem": 7,
+            "val": "a"
+        },
+        {
+            "mem": 8,
+            "val": "z"
+        },
+        {
+            "mem": 9,
+            "val": "a"
+        },
+        {
+            "mem": 10,
+            "val": "z"
+        },
+        {
+            "mem": 11,
+            "val": "a"
+        },
+        {
+            "mem": 15,
+            "val": "0"
         }
     ],
     "ops": [
         {
             "inx": 0,
             "cmd": "LD",
-            "arg": "0",
-            "dev": ""
+            "arg": "0"
         },
         {
             "inx": 1,
-            "cmd": "OUT",
-            "arg": "",
-            "dev": ""
+            "cmd": "ADD",
+            "arg": "4"
         },
         {
             "inx": 2,
-            "cmd": "LD",
-            "arg": "1",
-            "dev": ""
+            "cmd": "ST",
+            "arg": "5"
         },
         {
             "inx": 3,
-            "cmd": "OUT",
-            "arg": "",
-            "dev": ""
+            "cmd": "OUTR",
+            "arg": "6"
         },
         {
             "inx": 4,
-            "cmd": "IRET",
-            "arg": "",
-            "dev": ""
+            "cmd": "INR",
+            "arg": "11"
         },
         {
             "inx": 5,
-            "cmd": "IN",
-            "arg": "",
-            "dev": ""
+            "cmd": "HLT",
+            "arg": ""
         },
         {
             "inx": 6,
-            "cmd": "ST",
-            "arg": "4",
-            "dev": ""
+            "cmd": "LD",
+            "arg": ""
         },
         {
             "inx": 7,
-            "cmd": "IRET",
-            "arg": "",
-            "dev": ""
+            "cmd": "OUT",
+            "arg": ""
         },
         {
             "inx": 8,
-            "cmd": "OUTR",
-            "arg": "5",
-            "dev": "1"
+            "cmd": "LD",
+            "arg": "7"
         },
         {
             "inx": 9,
-            "cmd": "INR",
-            "arg": "10",
-            "dev": "0"
+            "cmd": "OUT",
+            "arg": ""
         },
         {
             "inx": 10,
-            "cmd": "HLT",
-            "arg": "",
-            "dev": ""
+            "cmd": "IRET",
+            "arg": ""
+        },
+        {
+            "inx": 11,
+            "cmd": "IN",
+            "arg": ""
+        },
+        {
+            "inx": 12,
+            "cmd": "ST",
+            "arg": "5"
+        },
+        {
+            "inx": 13,
+            "cmd": "IRET",
+            "arg": ""
         }
     ]
 }

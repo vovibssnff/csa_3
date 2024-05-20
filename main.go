@@ -14,8 +14,6 @@ func main() {
 	outputFile := flag.String("o", "", ".xml output file")
 	flag.Parse()
 
-	logrus.Info("Gonna parse other vars")
-
 	// Dereference the pointers to get the actual flag values
 	if *translateFlag {
 		translator.Translate(*inputFile, *outputFile)
