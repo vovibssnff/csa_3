@@ -4,6 +4,7 @@ import (
 	"csa_3/models"
 	"encoding/json"
 	"github.com/sirupsen/logrus"
+	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -146,6 +147,23 @@ func TranslateAssemblyToMachine(assembly models.Assembly) (models.MachineCode, e
 		}
 	}
 	return machine, nil
+}
+
+func Parse(filename string) (*models.MachineCode, error) {
+	fileContent, err := ioutil.ReadFile(filename)
+	if err != nil {
+		logrus.Error("Error reading JSON file: ", err)
+		return nil, err
+	}
+
+	var machineCode models.MachineCode
+	err = json.Unmarshal(fileContent, &machineCode)
+	if err != nil {
+		logrus.Error("Error unmarshalling JSON to machine code: ", err)
+		return nil, err
+	}
+
+	return &machineCode, nil
 }
 
 func Translate(i string, o string) {
