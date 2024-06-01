@@ -26,15 +26,15 @@ const (
 	NEG
 )
 
-var Opcodes = [...]string{"mv", "st", "ld", "inc", "dec", "mul", "div", "add", "neg", "cmp", "jz", "jmp", "hlt", "out", "in"}
+var Opcodes = [...]string{"right", "left", "mv", "st", "ld", "inc", "dec", "mul", "div", "add", "neg", "cmp", "jz", "jmp", "hlt", "out", "in"}
 
 type Data map[string]string
 
 type Operation struct {
 	Inx int    `json:"inx"`
 	Cmd string `json:"cmd"`
-	//Type string `json:"type"`
 	Arg string `json:"arg"`
+	Lit bool   `json:"lit"`
 }
 
 type KeyValuePair struct {

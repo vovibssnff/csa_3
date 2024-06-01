@@ -12,7 +12,7 @@ func main() {
 	translateFlag := flag.Bool("t", false, "translate code from .basm file to .xml machine code file")
 	executeFlag := flag.Bool("e", false, "execute code from .json file")
 	inputFile := flag.String("i", "", "input file of .basm extension")
-	paramFile := flag.String("conf", "", "input params file")
+	//paramFile := flag.String("conf", "", "input params file")
 	outputFile := flag.String("o", "", ".xml output file")
 	flag.Parse()
 
