@@ -10,7 +10,7 @@ import (
 )
 
 func simulaton(code models.MachineCode, token string, dataMemSize int, limit int) (string, int, int) {
-	dp := NewDataPath(dataMemSize, token)
+	dp := NewDataPath(code.Data, token)
 	cu := NewControlUnit(code, *dp)
 	instrCounter := 0
 	for instrCounter < limit {
@@ -24,7 +24,7 @@ func simulaton(code models.MachineCode, token string, dataMemSize int, limit int
 	return fmt.Sprint(dp.outputBuffer), instrCounter, cu.curTick
 }
 
-func main(i string, input string) {
+func Main(i string, input string) {
 	code, err := translator.Parse(i)
 	if err != nil {
 		logrus.Fatal(err)

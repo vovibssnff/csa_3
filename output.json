@@ -2,81 +2,105 @@
     "data": [
         {
             "mem": 0,
-            "val": "h"
+            "val": 104
         },
         {
             "mem": 1,
-            "val": "i"
+            "val": 105
         },
         {
             "mem": 2,
-            "val": ","
+            "val": 44
         },
         {
             "mem": 3,
-            "val": " "
+            "val": 32
         },
         {
             "mem": 4,
-            "val": "0"
+            "val": 0
         },
         {
             "mem": 5,
-            "val": "8"
+            "val": 8
         },
         {
             "mem": 6,
-            "val": "5"
+            "val": 5
+        },
+        {
+            "mem": 7,
+            "val": 52
+        },
+        {
+            "mem": 8,
+            "val": 0
+        },
+        {
+            "mem": 9,
+            "val": 108
+        },
+        {
+            "mem": 10,
+            "val": 111
+        },
+        {
+            "mem": 11,
+            "val": 108
+        },
+        {
+            "mem": 10,
+            "val": 0
         }
     ],
     "ops": [
         {
             "inx": 0,
-            "cmd": "LD",
-            "arg": "0",
-            "lit": false
+            "cmd": 0,
+            "arg": 0,
+            "rel": false
         },
         {
             "inx": 1,
-            "cmd": "ADD",
-            "arg": "4",
-            "lit": false
+            "cmd": 13,
+            "arg": 7,
+            "rel": false
         },
         {
             "inx": 2,
-            "cmd": "ST",
-            "arg": "5",
-            "lit": false
+            "cmd": 1,
+            "arg": 5,
+            "rel": true
         },
         {
             "inx": 3,
-            "cmd": "INR",
-            "arg": "5",
-            "lit": false
+            "cmd": 0,
+            "arg": 9,
+            "rel": false
         },
         {
             "inx": 4,
-            "cmd": "HLT",
-            "arg": "",
-            "lit": false
+            "cmd": 6,
+            "arg": 6,
+            "rel": false
         },
         {
             "inx": 5,
-            "cmd": "IN",
-            "arg": "",
-            "lit": false
+            "cmd": 5,
+            "arg": 0,
+            "rel": false
         },
         {
             "inx": 6,
-            "cmd": "ST",
-            "arg": "5",
-            "lit": false
+            "cmd": 1,
+            "arg": 5,
+            "rel": false
         },
         {
             "inx": 7,
-            "cmd": "IRET",
-            "arg": "",
-            "lit": false
+            "cmd": 7,
+            "arg": 0,
+            "rel": false
         }
     ]
 }

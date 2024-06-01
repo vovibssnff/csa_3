@@ -10,7 +10,7 @@ func main() {
 	logrus.SetLevel(logrus.DebugLevel)
 
 	translateFlag := flag.Bool("t", false, "translate code from .basm file to .xml machine code file")
-	executeFlag := flag.Bool("e", false, "execute code from .json file")
+	//executeFlag := flag.Bool("e", false, "execute code from .json file")
 	inputFile := flag.String("i", "", "input file of .basm extension")
 	//paramFile := flag.String("conf", "", "input params file")
 	outputFile := flag.String("o", "", ".xml output file")
@@ -21,7 +21,7 @@ func main() {
 		translator.Translate(*inputFile, *outputFile)
 	}
 
-	if *executeFlag {
-
-	}
+	//if *executeFlag {
+	//	machine.Main(*inputFile, *paramFile)
+	//}
 }

@@ -3,6 +3,7 @@ package translator
 import (
 	"csa_3/models"
 	"encoding/json"
+	"errors"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
@@ -10,8 +11,17 @@ import (
 	"strings"
 )
 
+func ParseOpcode(op string) (models.Opcode, error) {
+	for i, v := range models.Opcodes {
+		if v == op {
+			return models.Opcode(i), nil
+		}
+	}
+	return 0, errors.New("invalid opcode")
+}
+
 func ParseAssemblyCode(filename string) (models.Assembly, error) {
-	var dataSection []models.KeyValuePair
+	var dataSection []models.DataMemUnit
 	ops := make([]string, 0)
 	var sections []models.Section
 
@@ -46,15 +56,16 @@ func ParseAssemblyCode(filename string) (models.Assembly, error) {
 					lastCommaInx := strings.LastIndex(value, ",")
 					lit := strings.Trim(strings.TrimSpace(value[:lastCommaInx]), "\"")
 					for _, char := range lit {
-						dataSection = append(dataSection, models.KeyValuePair{Inx: inx, Key: key, Value: string(char)})
+						dataSection = append(dataSection, models.DataMemUnit{Inx: inx, Key: key, Value: int(char)})
 						inx += 1
 					}
 
 					// Add the null terminator
-					dataSection = append(dataSection, models.KeyValuePair{Inx: inx, Key: key, Value: "0"})
+					dataSection = append(dataSection, models.DataMemUnit{Inx: inx, Key: key, Value: 0})
 				} else {
 					// Store the numeric value
-					dataSection = append(dataSection, models.KeyValuePair{Inx: inx, Key: key, Value: value})
+					v, _ := strconv.Atoi(strings.TrimSpace(value))
+					dataSection = append(dataSection, models.DataMemUnit{Inx: inx, Key: key, Value: v})
 				}
 				inx += 1
 			}
@@ -72,11 +83,11 @@ func ParseAssemblyCode(filename string) (models.Assembly, error) {
 				ops = append(ops, parts[0]+" "+strconv.Itoa(dataInx))
 				for _, char := range lit {
 					//logrus.Info(char)
-					dataSection = append(dataSection, models.KeyValuePair{Inx: dataInx, Key: "", Value: string(char)})
+					dataSection = append(dataSection, models.DataMemUnit{Inx: dataInx, Key: "", Value: int(char)})
 					dataInx += 1
 				}
 				// Add the null terminator
-				dataSection = append(dataSection, models.KeyValuePair{Inx: inx, Key: "", Value: "0"})
+				dataSection = append(dataSection, models.DataMemUnit{Inx: inx, Key: "", Value: 0})
 				dataInx += 1
 			} else {
 				ops = append(ops, line)
@@ -100,16 +111,20 @@ func TranslateAssemblyToMachine(assembly models.Assembly) (models.MachineCode, e
 
 	for i, op := range assembly.Ops {
 		parts := strings.Fields(op)
-		op := parts[0]
-		var arg string
+		op, err := ParseOpcode(parts[0])
+		if err != nil {
+			logrus.Fatal(err, parts[0])
+		}
+		var arg int
+		rel := false
 
 		// arg commands
 		if len(parts) > 1 {
 
 			// literal check
-			_, err := strconv.Atoi(parts[1])
+			a, err := strconv.Atoi(parts[1])
 			if parts[1][0] == '"' || err == nil {
-				arg = parts[1]
+				arg = a
 			}
 
 			// section check
@@ -117,7 +132,7 @@ func TranslateAssemblyToMachine(assembly models.Assembly) (models.MachineCode, e
 				for i, sec := range assembly.Sections {
 					//logrus.Info(parts[1][1 : len(parts[1])-1])
 					if parts[1] == sec.Name {
-						arg = strconv.Itoa(i)
+						arg = i
 						break
 					}
 				}
@@ -125,9 +140,10 @@ func TranslateAssemblyToMachine(assembly models.Assembly) (models.MachineCode, e
 
 			// relative addr check
 			if parts[1][0] == '(' && parts[1][len(parts[1])-1] == ')' {
+				rel = true
 				for _, v := range assembly.DataSection {
 					if parts[1][1:len(parts[1])-1] == v.Key {
-						arg = strconv.Itoa(v.Inx)
+						arg = v.Inx
 					}
 				}
 			}
@@ -135,7 +151,7 @@ func TranslateAssemblyToMachine(assembly models.Assembly) (models.MachineCode, e
 			// arg name check
 			for _, v := range assembly.DataSection {
 				if parts[1] == v.Key {
-					arg = strconv.Itoa(v.Inx)
+					arg = v.Inx
 				}
 			}
 		}
@@ -144,6 +160,7 @@ func TranslateAssemblyToMachine(assembly models.Assembly) (models.MachineCode, e
 			Inx: i,
 			Cmd: op,
 			Arg: arg,
+			Rel: rel,
 		}
 	}
 	return machine, nil

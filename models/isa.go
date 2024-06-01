@@ -13,8 +13,7 @@ const (
 	HLT
 	//io
 	INR
-	IN
-	OUTR
+	IRET
 	OUT
 	//math
 	INC
@@ -26,22 +25,31 @@ const (
 	NEG
 )
 
-var Opcodes = [...]string{"right", "left", "mv", "st", "ld", "inc", "dec", "mul", "div", "add", "neg", "cmp", "jz", "jmp", "hlt", "out", "in"}
+var Opcodes = [...]string{"LD", "ST", "CMP", "JZ", "JMP", "HLT", "INR", "IRET", "OUT", "INC", "DEC", "MUL", "DIV", "ADD", "SUB",
+	"NEG"}
+
+func (o Opcode) String() string {
+	return Opcodes[o]
+}
+
+func (o Opcode) EnumIndex() int {
+	return int(o)
+}
 
 type Data map[string]string
 
 type Operation struct {
 	Inx int    `json:"inx"`
-	Cmd string `json:"cmd"`
-	Arg string `json:"arg"`
-	Lit bool   `json:"lit"`
+	Cmd Opcode `json:"cmd"`
+	Arg int    `json:"arg"`
+	Rel bool   `json:"rel"`
 }
 
-type KeyValuePair struct {
+type DataMemUnit struct {
 	Inx   int    `json:"mem"`
 	Key   string `json:"-"`
 	Sec   string `json:"-"`
-	Value string `json:"val"`
+	Value int    `json:"val"`
 }
 
 type Section struct {
@@ -50,12 +58,12 @@ type Section struct {
 }
 
 type MachineCode struct {
-	Data []KeyValuePair `json:"data"`
-	Ops  []Operation    `json:"ops"`
+	Data []DataMemUnit `json:"data"`
+	Ops  []Operation   `json:"ops"`
 }
 
 type Assembly struct {
-	DataSection []KeyValuePair
+	DataSection []DataMemUnit
 	Ops         []string
 	Sections    []Section
 }

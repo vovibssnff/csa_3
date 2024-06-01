@@ -5,12 +5,12 @@
 
 .ops
     LD 0
-    ADD 4
+    ADD "4"
     ST (kek)
+    LD "lol", 0
     INR .in_handler
     HLT
 
 .in_handler
-    IN
     ST kek
     IRET

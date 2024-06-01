@@ -2,6 +2,7 @@ package machine
 
 import (
 	"csa_3/models"
+	"github.com/sirupsen/logrus"
 	"os"
 	"strconv"
 )
@@ -35,8 +36,12 @@ func (cu *ControlUnit) tick() {
 	cu.curTick += 1
 }
 
-func (cu *ControlUnit) latchInstructionPointer() {
+func (cu *ControlUnit) printState() {
+	logrus.Info("tick: ", cu.curTick, " cmd: ", cu.instructionReg.Cmd, " acc: ", cu.dataPath.accReg, " dataReg: ",
+		cu.dataPath.dataReg, " addrReg: ", cu.dataPath.addressReg)
+}
 
+func (cu *ControlUnit) latchInstructionPointer() {
 }
 
 func (cu *ControlUnit) instructionFetch() {
@@ -45,8 +50,14 @@ func (cu *ControlUnit) instructionFetch() {
 }
 
 func (cu *ControlUnit) operandFetch() {
-	if cu.instructionReg.Arg != "" {
-		arg, _ := strconv.Atoi(cu.instructionReg.Arg)
+	if cu.instructionReg.Arg != 0 {
+		//arg, _ := strconv.Atoi(cu.instructionReg.Arg)
+		if cu.instructionReg.Rel {
+			cu.dataPath.latchAddressReg(cu.dataPath.dataReg)
+			cu.tick()
+			cu.dataPath.latchDataReg(DRmem)
+			cu.tick()
+		}
 		cu.dataPath.latchAddressReg(arg)
 		cu.tick()
 		cu.dataPath.latchDataReg(DRmem)
@@ -76,6 +87,7 @@ func (cu *ControlUnit) decodeExecuteCFInstruction(operation models.Operation) bo
 }
 
 func (cu *ControlUnit) decodeExecuteInstruction() {
+	defer cu.printState()
 	cu.instructionFetch() // 1 tick
 	if cu.decodeExecuteCFInstruction(cu.instructionReg) {
 		return
@@ -115,6 +127,5 @@ func (cu *ControlUnit) decodeExecuteInstruction() {
 		cu.dataPath.neg()
 		cu.tick()
 	}
-	if op
 
 }

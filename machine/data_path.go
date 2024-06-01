@@ -31,7 +31,7 @@ func (mux DRmux) String() string {
 	return [...]string{"DRmem", "DRacc"}[mux-1]
 }
 
-func NewDataPath(dataMemSize int, inputBuffer string) *DataPath {
+func NewDataPath(dataMem int, inputBuffer string) *DataPath {
 	return &DataPath{
 		dataMemSize:  dataMemSize,
 		dataMem:      make([]int, 0),
