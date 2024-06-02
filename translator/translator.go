@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/sirupsen/logrus"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -172,7 +171,7 @@ func TranslateAssemblyToMachine(assembly models.Assembly) (models.MachineCode, e
 }
 
 func Parse(filename string) (*models.MachineCode, error) {
-	fileContent, err := ioutil.ReadFile(filename)
+	fileContent, err := os.ReadFile(filename)
 	if err != nil {
 		logrus.Error("Error reading JSON file: ", err)
 		return nil, err
