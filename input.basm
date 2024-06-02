@@ -1,16 +1,17 @@
 .data
     h = "hi, ", 0
     kek = 8
-    i = 5
+    i = 4
 
 .ops
-    LD 0
-    ADD "4"
+    LD 54
+    ADD 100
+    ST kek
+    JMP .func
     ST (kek)
     LD "lol", 0
-    INR .in_handler
     HLT
 
-.in_handler
-    ST kek
-    IRET
+.func
+    ST (i)
+    HLT

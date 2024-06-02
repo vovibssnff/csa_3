@@ -9,19 +9,23 @@ import (
 	"os"
 )
 
-func simulaton(code models.MachineCode, token string, dataMemSize int, limit int) (string, int, int) {
-	dp := NewDataPath(code.Data, token)
-	cu := NewControlUnit(code, *dp)
-	instrCounter := 0
-	for instrCounter < limit {
-		cu.decodeExecuteInstruction()
-		instrCounter++
+func simulation(code models.MachineCode, token string, limit int) (string, int, int) {
+	var data []int
+	for _, i := range code.Data {
+		data = append(data, i.Val)
 	}
-	if instrCounter >= limit {
-		logrus.Fatal("Limit exceeded")
+	dp := NewDataPath(data, token)
+	cu := NewControlUnit(code.Ops, *dp)
+	for cu.instructionCounter < limit {
+		cu.decodeExecuteInstruction()
+		cu.incrementIC()
+		cu.checkExit()
+	}
+	if cu.instructionCounter >= limit {
+		logrus.Fatal("Operation limit exceeded")
 	}
 	logrus.Info("Output buffer: ", dp.outputBuffer)
-	return fmt.Sprint(dp.outputBuffer), instrCounter, cu.curTick
+	return fmt.Sprint(dp.outputBuffer), cu.instructionCounter, cu.curTick
 }
 
 func Main(i string, input string) {
@@ -46,10 +50,9 @@ func Main(i string, input string) {
 		logrus.Fatal(err)
 	}
 
-	output, instrCounter, ticks := simulaton(
+	output, instrCounter, ticks := simulation(
 		*code,
 		token,
-		100,
 		1000,
 	)
 	logrus.Info("Output: ", output)

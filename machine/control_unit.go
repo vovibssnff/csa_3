@@ -4,81 +4,89 @@ import (
 	"csa_3/models"
 	"github.com/sirupsen/logrus"
 	"os"
-	"strconv"
 )
 
-//
-//type Signal int
-//
-//const (
-//	Input Signal = iota
-//	Res
-//)
-
 type ControlUnit struct {
-	program            models.MachineCode
+	program            []models.Operation
 	instructionPointer int
 	instructionReg     models.Operation
+	instructionCounter int
 	dataPath           DataPath
 	curTick            int
+	halted             bool
 }
 
-func NewControlUnit(program models.MachineCode, dataPath DataPath) *ControlUnit {
+func NewControlUnit(program []models.Operation, dataPath DataPath) *ControlUnit {
 	return &ControlUnit{
 		program:            program,
 		instructionPointer: 0,
+		instructionCounter: 0,
 		dataPath:           dataPath,
 		curTick:            0,
 	}
 }
 
+func (cu *ControlUnit) printState() {
+	logrus.Infof("TICK: %3d | IC: %3d | CMD: %4s | ARG: %3d | AC: %3d | DR: %3d | AR: %3d | MEM: %3d",
+		cu.curTick, cu.instructionCounter, cu.instructionReg.Cmd, cu.instructionReg.Arg, cu.dataPath.accReg, cu.dataPath.dataReg, cu.dataPath.addressReg, cu.dataPath.dataMem[cu.dataPath.addressReg])
+}
+
 func (cu *ControlUnit) tick() {
+	cu.printState()
 	cu.curTick += 1
 }
 
-func (cu *ControlUnit) printState() {
-	logrus.Info("tick: ", cu.curTick, " cmd: ", cu.instructionReg.Cmd, " acc: ", cu.dataPath.accReg, " dataReg: ",
-		cu.dataPath.dataReg, " addrReg: ", cu.dataPath.addressReg)
+func (cu *ControlUnit) incrementIC() {
+	cu.instructionCounter++
+}
+
+func (cu *ControlUnit) checkExit() {
+	if cu.halted {
+		logrus.Info(cu.dataPath.dataMem)
+		os.Exit(0)
+	}
 }
 
 func (cu *ControlUnit) latchInstructionPointer() {
 }
 
+func (cu *ControlUnit) incrementInstructionPointer() {
+	cu.instructionPointer++
+}
+
 func (cu *ControlUnit) instructionFetch() {
-	cu.instructionReg = cu.program.Ops[cu.instructionPointer]
+	cu.instructionReg = cu.program[cu.instructionPointer]
 	cu.tick()
 }
 
 func (cu *ControlUnit) operandFetch() {
 	if cu.instructionReg.Arg != 0 {
-		//arg, _ := strconv.Atoi(cu.instructionReg.Arg)
-		if cu.instructionReg.Rel {
-			cu.dataPath.latchAddressReg(cu.dataPath.dataReg)
+		arg := cu.instructionReg.Arg
+		if cu.instructionReg.Iam {
+			cu.dataPath.latchAddressReg(arg)
 			cu.tick()
-			cu.dataPath.latchDataReg(DRmem)
+			cu.dataPath.latchDataReg(DRmem, nil)
+			cu.tick()
+		} else {
+			cu.dataPath.latchDataReg(DRir, &cu.instructionReg.Arg)
 			cu.tick()
 		}
-		cu.dataPath.latchAddressReg(arg)
-		cu.tick()
-		cu.dataPath.latchDataReg(DRmem)
-		cu.tick()
 	}
 }
 
 func (cu *ControlUnit) decodeExecuteCFInstruction(operation models.Operation) bool {
-	if operation.Cmd == "HLT" {
-		os.Exit(0)
+	if operation.Cmd == models.HLT {
+		cu.halted = true
+		return true
 	}
-	if operation.Cmd == "JMP" {
-		addr, _ := strconv.Atoi(operation.Arg)
-		cu.instructionPointer = cu.program.Ops[addr].Inx
+	if operation.Cmd == models.JMP {
+		cu.instructionPointer = cu.program[operation.Arg].Idx
 		cu.tick()
 		return true
 	}
-	if operation.Cmd == "JZ" {
+	if operation.Cmd == models.JZ {
 		if cu.dataPath.zeroFlag() {
-			addr, _ := strconv.Atoi(operation.Arg)
-			cu.instructionPointer = cu.program.Ops[addr].Inx
+			cu.instructionPointer = cu.program[operation.Arg].Idx
 			cu.tick()
 			return true
 		}
@@ -87,45 +95,44 @@ func (cu *ControlUnit) decodeExecuteCFInstruction(operation models.Operation) bo
 }
 
 func (cu *ControlUnit) decodeExecuteInstruction() {
-	defer cu.printState()
 	cu.instructionFetch() // 1 tick
+	cu.operandFetch()     // 0 or 2 ticks
 	if cu.decodeExecuteCFInstruction(cu.instructionReg) {
 		return
 	}
-	cu.operandFetch() // 0 or 2 ticks
 	opcode := cu.instructionReg.Cmd
-	if opcode == "LD" {
-		//TODO переписать (нельзя передавать DR тут)
+	if opcode.EnumIndex() == models.LD {
 		cu.dataPath.latchAcc(cu.dataPath.dataReg)
 		cu.tick()
 	}
-	if opcode == "ST" {
+	if opcode.EnumIndex() == models.ST {
 		cu.dataPath.latchAddressReg(cu.dataPath.dataReg)
 		cu.tick()
-		cu.dataPath.latchDataReg(DRacc)
+		cu.dataPath.latchDataReg(DRacc, nil)
 		cu.tick()
 		cu.dataPath.saveToMemory()
 		cu.tick()
 	}
-	if opcode == "ADD" {
+	if opcode.EnumIndex() == models.ADD {
 		cu.dataPath.add()
 		cu.tick()
 	}
-	if opcode == "SUB" {
+	if opcode.EnumIndex() == models.SUB {
 		cu.dataPath.sub()
 		cu.tick()
 	}
-	if opcode == "MUL" {
+	if opcode.EnumIndex() == models.MUL {
 		cu.dataPath.mul()
 		cu.tick()
 	}
-	if opcode == "DIV" {
+	if opcode.EnumIndex() == models.DIV {
 		cu.dataPath.div()
 		cu.tick()
 	}
-	if opcode == "NEG" {
+	if opcode.EnumIndex() == models.NEG {
 		cu.dataPath.neg()
 		cu.tick()
 	}
-
+	cu.incrementInstructionPointer()
+	return
 }

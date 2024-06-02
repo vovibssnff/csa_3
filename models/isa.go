@@ -12,7 +12,6 @@ const (
 	JMP
 	HLT
 	//io
-	INR
 	IRET
 	OUT
 	//math
@@ -25,8 +24,12 @@ const (
 	NEG
 )
 
-var Opcodes = [...]string{"LD", "ST", "CMP", "JZ", "JMP", "HLT", "INR", "IRET", "OUT", "INC", "DEC", "MUL", "DIV", "ADD", "SUB",
-	"NEG"}
+var Opcodes = [...]string{
+	"LD", "ST",
+	"CMP", "JZ", "JMP", "HLT",
+	"IRET", "OUT",
+	"INC", "DEC", "MUL", "DIV", "ADD", "SUB", "NEG",
+}
 
 func (o Opcode) String() string {
 	return Opcodes[o]
@@ -36,30 +39,28 @@ func (o Opcode) EnumIndex() int {
 	return int(o)
 }
 
-type Data map[string]string
-
 type Operation struct {
-	Inx int    `json:"inx"`
+	Idx int    `json:"idx"`
 	Cmd Opcode `json:"cmd"`
 	Arg int    `json:"arg"`
-	Rel bool   `json:"rel"`
+	Iam bool   `json:"iam"` // indirect addressing mode
 }
 
 type DataMemUnit struct {
-	Inx   int    `json:"mem"`
-	Key   string `json:"-"`
-	Sec   string `json:"-"`
-	Value int    `json:"val"`
+	Idx int    `json:"idx"`
+	Key string `json:"-"`
+	Sec string `json:"-"`
+	Val int    `json:"val"`
 }
 
 type Section struct {
 	Name string
-	Inx  int
+	Idx  int
 }
 
 type MachineCode struct {
 	Data []DataMemUnit `json:"data"`
-	Ops  []Operation   `json:"ops"`
+	Ops  []Operation   `json:"code"`
 }
 
 type Assembly struct {

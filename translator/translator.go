@@ -47,48 +47,52 @@ func ParseAssemblyCode(filename string) (models.Assembly, error) {
 
 		parts := strings.Split(line, "=")
 		if currentSection == ".data" {
-
 			if len(parts) == 2 {
 				key := strings.TrimSpace(parts[0])
 				value := strings.TrimSpace(parts[1])
-
 				if strings.HasPrefix(value, "\"") && strings.Contains(value, "\"") {
 					lastCommaInx := strings.LastIndex(value, ",")
 					lit := strings.Trim(strings.TrimSpace(value[:lastCommaInx]), "\"")
 					for _, char := range lit {
-						dataSection = append(dataSection, models.DataMemUnit{Inx: inx, Key: key, Value: int(char)})
+						dataSection = append(dataSection, models.DataMemUnit{Idx: inx, Key: key, Val: int(char)})
 						inx += 1
 					}
-
 					// Add the null terminator
-					dataSection = append(dataSection, models.DataMemUnit{Inx: inx, Key: key, Value: 0})
+					dataSection = append(dataSection, models.DataMemUnit{Idx: inx, Key: key, Val: 0})
 				} else {
 					// Store the numeric value
 					v, _ := strconv.Atoi(strings.TrimSpace(value))
-					dataSection = append(dataSection, models.DataMemUnit{Inx: inx, Key: key, Value: v})
+					dataSection = append(dataSection, models.DataMemUnit{Idx: inx, Key: key, Val: v})
 				}
 				inx += 1
 			}
 			dataInx = inx
 		} else if currentSection != "" {
 			parts := strings.SplitN(line, " ", 3)
-			sections = append(sections, models.Section{Name: currentSection, Inx: inx})
-			//logrus.Info(len(parts))
+			sections = append(sections, models.Section{Name: currentSection, Idx: inx})
 			if len(parts) > 1 && strings.HasPrefix(parts[1], "\"") && strings.Contains(parts[1], "\"") {
-				//logrus.Info(parts[1])
 				lit := strings.Trim(strings.TrimSpace(parts[1]), "\"")
 				lit = strings.ReplaceAll(lit, `"`, "")
 				lit = strings.ReplaceAll(lit, ",", "")
-				//logrus.Info(lit)
 				ops = append(ops, parts[0]+" "+strconv.Itoa(dataInx))
 				for _, char := range lit {
-					//logrus.Info(char)
-					dataSection = append(dataSection, models.DataMemUnit{Inx: dataInx, Key: "", Value: int(char)})
+					dataSection = append(dataSection, models.DataMemUnit{Idx: dataInx, Key: "", Val: int(char)})
 					dataInx += 1
 				}
 				// Add the null terminator
-				dataSection = append(dataSection, models.DataMemUnit{Inx: inx, Key: "", Value: 0})
+				dataSection = append(dataSection, models.DataMemUnit{Idx: dataInx, Key: "", Val: 0})
 				dataInx += 1
+			} else if len(parts) > 1 {
+				arg := parts[1]
+				if num, err := strconv.Atoi(arg); err == nil {
+					// It's a numeric literal
+					ops = append(ops, parts[0]+" "+strconv.Itoa(num))
+					//dataSection = append(dataSection, models.DataMemUnit{Idx: dataInx, Key: "", Val: num})
+					//ops = append(ops, parts[0]+" "+strconv.Itoa(dataInx))
+					//dataInx += 1
+				} else {
+					ops = append(ops, line)
+				}
 			} else {
 				ops = append(ops, line)
 			}
@@ -143,7 +147,7 @@ func TranslateAssemblyToMachine(assembly models.Assembly) (models.MachineCode, e
 				rel = true
 				for _, v := range assembly.DataSection {
 					if parts[1][1:len(parts[1])-1] == v.Key {
-						arg = v.Inx
+						arg = v.Idx
 					}
 				}
 			}
@@ -151,16 +155,17 @@ func TranslateAssemblyToMachine(assembly models.Assembly) (models.MachineCode, e
 			// arg name check
 			for _, v := range assembly.DataSection {
 				if parts[1] == v.Key {
-					arg = v.Inx
+					arg = v.Idx
 				}
 			}
+
 		}
 
 		machine.Ops[i] = models.Operation{
-			Inx: i,
+			Idx: i,
 			Cmd: op,
 			Arg: arg,
-			Rel: rel,
+			Iam: rel,
 		}
 	}
 	return machine, nil

@@ -19,6 +19,7 @@ type DRmux int
 const (
 	DRmem DRmux = iota
 	DRacc
+	DRir
 )
 
 //type ALUctrl int
@@ -31,10 +32,10 @@ func (mux DRmux) String() string {
 	return [...]string{"DRmem", "DRacc"}[mux-1]
 }
 
-func NewDataPath(dataMem int, inputBuffer string) *DataPath {
+func NewDataPath(dataMem []int, inputBuffer string) *DataPath {
 	return &DataPath{
-		dataMemSize:  dataMemSize,
-		dataMem:      make([]int, 0),
+		dataMemSize:  len(dataMem),
+		dataMem:      dataMem,
 		addressReg:   0,
 		dataReg:      0,
 		accReg:       0,
@@ -50,12 +51,15 @@ func (dp *DataPath) latchAddressReg(addr int) {
 	}
 }
 
-func (dp *DataPath) latchDataReg(sel DRmux) {
-	if sel == DRmem {
+// TODO solve
+func (dp *DataPath) latchDataReg(sel DRmux, val *int) {
+	switch sel {
+	case DRmem:
 		dp.dataReg = dp.dataMem[dp.addressReg]
-	}
-	if sel == DRacc {
+	case DRacc:
 		dp.dataReg = dp.accReg
+	case DRir:
+		dp.dataReg = *val
 	}
 }
 
