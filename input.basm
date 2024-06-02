@@ -1,17 +1,37 @@
 .data
-    h = "hi, ", 0
-    kek = 8
-    i = 4
+    buf = "abcd", 0
+    i = buf
+    temp = 0
+
+.int
+    #0 .in_isr
 
 .ops
-    LD 54
-    ADD 100
-    ST kek
-    JMP .func
-    ST (kek)
-    LD "lol", 0
+    JMP .spin_loop
     HLT
 
-.func
-    ST (i)
+.spin_loop
+    DI
+    CMP 0
+    JZ .out
+    EI
+    JMP .spin_loop
+
+.out
+    CMP 0
+    JZ .end
+    OUT #1
+    JMP .out
+
+.end
     HLT
+
+.in_isr
+    IN
+    ST temp     ; сохранение ввода
+    ST (i)
+    LD i
+    INC
+    ST i
+    LD temp
+    IRET

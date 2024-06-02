@@ -7,16 +7,53 @@ import (
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"os"
+	"strconv"
+	"strings"
 )
 
-func simulation(code models.MachineCode, token string, limit int) (string, int, int) {
+func fileToTokens(f *os.File) map[int]int {
+	scanner := bufio.NewScanner(f)
+	scanner.Split(bufio.ScanRunes)
+
+	// Read the entire file content
+	var content string
+	for scanner.Scan() {
+		content += scanner.Text()
+	}
+
+	if err := scanner.Err(); err != nil {
+		logrus.Fatal(err)
+	}
+
+	pairs := strings.Split(content, "), (")
+	dict := make(map[int]int)
+
+	for _, pair := range pairs {
+		pair = strings.Trim(pair, "() ")
+		parts := strings.Split(pair, ", ")
+		if len(parts) != 2 {
+			logrus.Fatal("Invalid format in file content")
+		}
+		number, err := strconv.Atoi(parts[0])
+		if err != nil {
+			logrus.Fatal(err)
+		}
+		char := rune(parts[1][1]) // Extracting the character inside single quotes
+		dict[number] = int(char)
+	}
+	return dict
+}
+
+func simulation(code models.MachineCode, tokens map[int]int, limit int) (string, int, int) {
 	var data []int
 	for _, i := range code.Data {
 		data = append(data, i.Val)
 	}
-	dp := NewDataPath(data, token)
+	dp := NewDataPath(data, code.Ints, tokens)
 	cu := NewControlUnit(code.Ops, *dp)
 	for cu.instructionCounter < limit {
+		cu.checkInterrupt()
+		cu.handleInterrupt()
 		cu.decodeExecuteInstruction()
 		cu.incrementIC()
 		cu.checkExit()
@@ -24,8 +61,8 @@ func simulation(code models.MachineCode, token string, limit int) (string, int, 
 	if cu.instructionCounter >= limit {
 		logrus.Fatal("Operation limit exceeded")
 	}
-	logrus.Info("Output buffer: ", dp.outputBuffer)
-	return fmt.Sprint(dp.outputBuffer), cu.instructionCounter, cu.curTick
+	//logrus.Info("Output buffer: ", dp.outputBuffer)
+	return fmt.Sprint(dp.portCtrl.oBuf), cu.instructionCounter, cu.curTick
 }
 
 func Main(i string, input string) {
@@ -39,20 +76,11 @@ func Main(i string, input string) {
 	}
 	defer inputFile.Close()
 
-	var token string
-	scanner := bufio.NewScanner(inputFile)
-	scanner.Split(bufio.ScanRunes)
-	for scanner.Scan() {
-		token += scanner.Text()
-	}
-
-	if err := scanner.Err(); err != nil {
-		logrus.Fatal(err)
-	}
+	tokens := fileToTokens(inputFile)
 
 	output, instrCounter, ticks := simulation(
 		*code,
-		token,
+		tokens,
 		1000,
 	)
 	logrus.Info("Output: ", output)

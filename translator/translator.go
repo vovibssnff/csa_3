@@ -23,6 +23,8 @@ func ParseAssemblyCode(filename string) (models.Assembly, error) {
 	var dataSection []models.DataMemUnit
 	ops := make([]string, 0)
 	var sections []models.Section
+	ints := make(map[string]int)
+	addressMap := make(map[string]int)
 
 	content, err := os.ReadFile(filename)
 	if err != nil {
@@ -32,7 +34,6 @@ func ParseAssemblyCode(filename string) (models.Assembly, error) {
 	lines := strings.Split(string(content), "\n")
 	var currentSection string
 	inx := 0
-	dataInx := 0
 
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
@@ -50,6 +51,7 @@ func ParseAssemblyCode(filename string) (models.Assembly, error) {
 				key := strings.TrimSpace(parts[0])
 				value := strings.TrimSpace(parts[1])
 				if strings.HasPrefix(value, "\"") && strings.Contains(value, "\"") {
+					// Handle string literals
 					lastCommaInx := strings.LastIndex(value, ",")
 					lit := strings.Trim(strings.TrimSpace(value[:lastCommaInx]), "\"")
 					for _, char := range lit {
@@ -58,14 +60,29 @@ func ParseAssemblyCode(filename string) (models.Assembly, error) {
 					}
 					// Add the null terminator
 					dataSection = append(dataSection, models.DataMemUnit{Idx: inx, Key: key, Val: 0})
-				} else {
-					// Store the numeric value
-					v, _ := strconv.Atoi(strings.TrimSpace(value))
-					dataSection = append(dataSection, models.DataMemUnit{Idx: inx, Key: key, Val: v})
+					inx += 1
+					addressMap[key] = inx - len(lit) - 1 // Store the starting address of the string
+				} else if num, err := strconv.Atoi(value); err == nil {
+					// Handle numeric values
+					dataSection = append(dataSection, models.DataMemUnit{Idx: inx, Key: key, Val: num})
+					inx += 1
+					addressMap[key] = inx - 1 // Store the address of the numeric value
+				} else if addr, ok := addressMap[value]; ok {
+					// Handle address of another variable
+					dataSection = append(dataSection, models.DataMemUnit{Idx: inx, Key: key, Val: addr})
+					inx += 1
+					addressMap[key] = addr // Store the same address as the referenced variable
 				}
-				inx += 1
 			}
-			dataInx = inx
+		} else if currentSection == ".int" {
+			parts = strings.Split(parts[0], " ")
+			logrus.Info(parts[1])
+			if len(parts) == 2 {
+				key, _ := strconv.Atoi(strings.Trim(strings.TrimSpace(parts[0]), "#"))
+				value := strings.TrimSpace(parts[1])
+				logrus.Info(key, value)
+				ints[value] = key
+			}
 		} else if currentSection != "" {
 			parts := strings.SplitN(line, " ", 3)
 			sections = append(sections, models.Section{Name: currentSection, Idx: inx})
@@ -73,22 +90,19 @@ func ParseAssemblyCode(filename string) (models.Assembly, error) {
 				lit := strings.Trim(strings.TrimSpace(parts[1]), "\"")
 				lit = strings.ReplaceAll(lit, `"`, "")
 				lit = strings.ReplaceAll(lit, ",", "")
-				ops = append(ops, parts[0]+" "+strconv.Itoa(dataInx))
+				ops = append(ops, parts[0]+" "+strconv.Itoa(inx))
 				for _, char := range lit {
-					dataSection = append(dataSection, models.DataMemUnit{Idx: dataInx, Key: "", Val: int(char)})
-					dataInx += 1
+					dataSection = append(dataSection, models.DataMemUnit{Idx: inx, Key: "", Val: int(char)})
+					inx += 1
 				}
 				// Add the null terminator
-				dataSection = append(dataSection, models.DataMemUnit{Idx: dataInx, Key: "", Val: 0})
-				dataInx += 1
+				dataSection = append(dataSection, models.DataMemUnit{Idx: inx, Key: "", Val: 0})
+				inx += 1
 			} else if len(parts) > 1 {
 				arg := parts[1]
 				if num, err := strconv.Atoi(arg); err == nil {
 					// It's a numeric literal
 					ops = append(ops, parts[0]+" "+strconv.Itoa(num))
-					//dataSection = append(dataSection, models.DataMemUnit{Idx: dataInx, Key: "", Val: num})
-					//ops = append(ops, parts[0]+" "+strconv.Itoa(dataInx))
-					//dataInx += 1
 				} else {
 					ops = append(ops, line)
 				}
@@ -102,6 +116,7 @@ func ParseAssemblyCode(filename string) (models.Assembly, error) {
 	return models.Assembly{
 		DataSection: dataSection,
 		Ops:         ops,
+		Interrupts:  ints,
 		Sections:    sections,
 	}, nil
 }
@@ -111,6 +126,18 @@ func TranslateAssemblyToMachine(assembly models.Assembly) (models.MachineCode, e
 		Data: assembly.DataSection,
 		Ops:  make([]models.Operation, len(assembly.Ops)),
 	}
+	// section resolving in .int section
+	ints := make(map[int]int)
+	for key, val := range assembly.Interrupts {
+		for i, sec := range assembly.Sections {
+			if key == sec.Name {
+				ints[i] = val
+				logrus.Info(sec.Idx, val)
+				break
+			}
+		}
+	}
+	machine.Ints = ints
 
 	for i, op := range assembly.Ops {
 		parts := strings.Fields(op)
@@ -123,7 +150,6 @@ func TranslateAssemblyToMachine(assembly models.Assembly) (models.MachineCode, e
 
 		// arg commands
 		if len(parts) > 1 {
-
 			// literal check
 			a, err := strconv.Atoi(parts[1])
 			if parts[1][0] == '"' || err == nil {
@@ -133,7 +159,6 @@ func TranslateAssemblyToMachine(assembly models.Assembly) (models.MachineCode, e
 			// section check
 			if parts[1][0] == '.' || err == nil {
 				for i, sec := range assembly.Sections {
-					//logrus.Info(parts[1][1 : len(parts[1])-1])
 					if parts[1] == sec.Name {
 						arg = i
 						break
@@ -157,7 +182,6 @@ func TranslateAssemblyToMachine(assembly models.Assembly) (models.MachineCode, e
 					arg = v.Idx
 				}
 			}
-
 		}
 
 		machine.Ops[i] = models.Operation{

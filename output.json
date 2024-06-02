@@ -2,19 +2,19 @@
     "data": [
         {
             "idx": 0,
-            "val": 104
+            "val": 97
         },
         {
             "idx": 1,
-            "val": 105
+            "val": 98
         },
         {
             "idx": 2,
-            "val": 44
+            "val": 99
         },
         {
             "idx": 3,
-            "val": 32
+            "val": 100
         },
         {
             "idx": 4,
@@ -22,52 +22,39 @@
         },
         {
             "idx": 5,
-            "val": 8
+            "val": 0
         },
         {
             "idx": 6,
-            "val": 4
-        },
-        {
-            "idx": 7,
-            "val": 108
-        },
-        {
-            "idx": 8,
-            "val": 111
-        },
-        {
-            "idx": 9,
-            "val": 108
-        },
-        {
-            "idx": 10,
             "val": 0
         }
     ],
+    "ints": {
+        "2": 0
+    },
     "code": [
         {
             "idx": 0,
-            "cmd": 0,
-            "arg": 54,
+            "cmd": 4,
+            "arg": 10,
             "iam": false
         },
         {
             "idx": 1,
-            "cmd": 12,
-            "arg": 100,
+            "cmd": 5,
+            "arg": 0,
             "iam": false
         },
         {
             "idx": 2,
-            "cmd": 1,
-            "arg": 5,
+            "cmd": 8,
+            "arg": 0,
             "iam": false
         },
         {
             "idx": 3,
-            "cmd": 4,
-            "arg": 7,
+            "cmd": 1,
+            "arg": 6,
             "iam": false
         },
         {
@@ -79,23 +66,89 @@
         {
             "idx": 5,
             "cmd": 0,
-            "arg": 7,
+            "arg": 5,
             "iam": false
         },
         {
             "idx": 6,
-            "cmd": 5,
+            "cmd": 11,
             "arg": 0,
             "iam": false
         },
         {
             "idx": 7,
             "cmd": 1,
-            "arg": 6,
-            "iam": true
+            "arg": 5,
+            "iam": false
         },
         {
             "idx": 8,
+            "cmd": 0,
+            "arg": 6,
+            "iam": false
+        },
+        {
+            "idx": 9,
+            "cmd": 10,
+            "arg": 0,
+            "iam": false
+        },
+        {
+            "idx": 10,
+            "cmd": 7,
+            "arg": 0,
+            "iam": false
+        },
+        {
+            "idx": 11,
+            "cmd": 2,
+            "arg": 0,
+            "iam": false
+        },
+        {
+            "idx": 12,
+            "cmd": 3,
+            "arg": 15,
+            "iam": false
+        },
+        {
+            "idx": 13,
+            "cmd": 6,
+            "arg": 0,
+            "iam": false
+        },
+        {
+            "idx": 14,
+            "cmd": 4,
+            "arg": 10,
+            "iam": false
+        },
+        {
+            "idx": 15,
+            "cmd": 2,
+            "arg": 0,
+            "iam": false
+        },
+        {
+            "idx": 16,
+            "cmd": 3,
+            "arg": 19,
+            "iam": false
+        },
+        {
+            "idx": 17,
+            "cmd": 9,
+            "arg": 0,
+            "iam": false
+        },
+        {
+            "idx": 18,
+            "cmd": 4,
+            "arg": 15,
+            "iam": false
+        },
+        {
+            "idx": 19,
             "cmd": 5,
             "arg": 0,
             "iam": false

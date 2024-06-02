@@ -12,8 +12,11 @@ const (
 	JMP
 	HLT
 	//io
-	IRET
+	EI
+	DI
+	IN
 	OUT
+	IRET
 	//math
 	INC
 	DEC
@@ -27,7 +30,7 @@ const (
 var Opcodes = [...]string{
 	"LD", "ST",
 	"CMP", "JZ", "JMP", "HLT",
-	"IRET", "OUT",
+	"EI", "DI", "IN", "OUT", "IRET",
 	"INC", "DEC", "MUL", "DIV", "ADD", "SUB", "NEG",
 }
 
@@ -60,11 +63,13 @@ type Section struct {
 
 type MachineCode struct {
 	Data []DataMemUnit `json:"data"`
+	Ints map[int]int   `json:"ints"`
 	Ops  []Operation   `json:"code"`
 }
 
 type Assembly struct {
 	DataSection []DataMemUnit
+	Interrupts  map[string]int
 	Ops         []string
 	Sections    []Section
 }
