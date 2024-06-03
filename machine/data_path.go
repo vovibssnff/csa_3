@@ -1,6 +1,7 @@
 package machine
 
 import (
+	"fmt"
 	"github.com/sirupsen/logrus"
 )
 
@@ -20,12 +21,12 @@ type IOPortController struct {
 	iPort  int
 	oPort  int
 	iBuf   map[int]int
-	oBuf   string
+	oBuf   *string
 	bus    int
 	isrMap map[int]int // карта привязки хэндлеров прерываний к портам ву
 }
 
-func NewIOPortController(IPORT int, OPORT int, IBUF map[int]int, OBUF string, ints map[int]int) *IOPortController {
+func NewIOPortController(IPORT int, OPORT int, IBUF map[int]int, OBUF *string, ints map[int]int) *IOPortController {
 	return &IOPortController{
 		iPort:  IPORT,
 		oPort:  OPORT,
@@ -61,9 +62,9 @@ type DataPath struct {
 	negFlag     bool
 }
 
-func NewDataPath(dataMem []int, ints map[int]int, inputBuffer map[int]int) *DataPath {
+func NewDataPath(dataMem []int, ints map[int]int, inputBuffer map[int]int, out *string) *DataPath {
 	return &DataPath{
-		portCtrl:    *NewIOPortController(0, 0, inputBuffer, "", ints),
+		portCtrl:    *NewIOPortController(0, 1, inputBuffer, out, ints),
 		intCtrl:     *NewInterruptionController(),
 		dataMemSize: len(dataMem),
 		dataMem:     dataMem,
@@ -76,13 +77,27 @@ func NewDataPath(dataMem []int, ints map[int]int, inputBuffer map[int]int) *Data
 	}
 }
 
-func (p *IOPortController) interruptionRequest(intCtrl InterruptionController, addr int) {
+func (p *IOPortController) interruptionRequest(intCtrl *InterruptionController, addr int) {
 	intCtrl.generateInterruption(addr)
+}
+
+func (dp *DataPath) in() {
+	dp.latchAcc(dp.portCtrl.bus)
+}
+
+func (dp *DataPath) out() {
+	v := fmt.Sprint(*dp.portCtrl.oBuf, string(rune(dp.accReg)))
+	*dp.portCtrl.oBuf = v
 }
 
 func (ic *InterruptionController) generateInterruption(addr int) {
 	ic.interrupt = true
 	ic.isrAddr = addr
+}
+
+func (ic *InterruptionController) unsetInterruption() {
+	ic.interrupt = false
+	ic.isrAddr = 0
 }
 
 func (dp *DataPath) latchBufferReg() {

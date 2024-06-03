@@ -76,11 +76,9 @@ func ParseAssemblyCode(filename string) (models.Assembly, error) {
 			}
 		} else if currentSection == ".int" {
 			parts = strings.Split(parts[0], " ")
-			logrus.Info(parts[1])
 			if len(parts) == 2 {
 				key, _ := strconv.Atoi(strings.Trim(strings.TrimSpace(parts[0]), "#"))
 				value := strings.TrimSpace(parts[1])
-				logrus.Info(key, value)
 				ints[value] = key
 			}
 		} else if currentSection != "" {
@@ -132,7 +130,6 @@ func TranslateAssemblyToMachine(assembly models.Assembly) (models.MachineCode, e
 		for i, sec := range assembly.Sections {
 			if key == sec.Name {
 				ints[i] = val
-				logrus.Info(sec.Idx, val)
 				break
 			}
 		}
@@ -146,11 +143,13 @@ func TranslateAssemblyToMachine(assembly models.Assembly) (models.MachineCode, e
 			logrus.Fatal(err, parts[0])
 		}
 		var arg int
-		rel := false
+		addrMode := models.DIRECT
 
 		// arg commands
 		if len(parts) > 1 {
+			arg, _ = strconv.Atoi(strings.Trim(parts[1], "#"))
 			// literal check
+			addrMode = models.DIRECT
 			a, err := strconv.Atoi(parts[1])
 			if parts[1][0] == '"' || err == nil {
 				arg = a
@@ -160,6 +159,7 @@ func TranslateAssemblyToMachine(assembly models.Assembly) (models.MachineCode, e
 			if parts[1][0] == '.' || err == nil {
 				for i, sec := range assembly.Sections {
 					if parts[1] == sec.Name {
+						addrMode = models.DEFAULT
 						arg = i
 						break
 					}
@@ -168,9 +168,13 @@ func TranslateAssemblyToMachine(assembly models.Assembly) (models.MachineCode, e
 
 			// relative addr check
 			if parts[1][0] == '(' && parts[1][len(parts[1])-1] == ')' {
-				rel = true
 				for _, v := range assembly.DataSection {
 					if parts[1][1:len(parts[1])-1] == v.Key {
+						if parts[0] == "ST" {
+							addrMode = models.DEFAULT
+						} else {
+							addrMode = models.RELATIVE
+						}
 						arg = v.Idx
 					}
 				}
@@ -179,16 +183,21 @@ func TranslateAssemblyToMachine(assembly models.Assembly) (models.MachineCode, e
 			// arg name check
 			for _, v := range assembly.DataSection {
 				if parts[1] == v.Key {
+					if parts[0] == "ST" {
+						addrMode = models.DIRECT
+					} else {
+						addrMode = models.DEFAULT
+					}
 					arg = v.Idx
 				}
 			}
 		}
 
 		machine.Ops[i] = models.Operation{
-			Idx: i,
-			Cmd: op,
-			Arg: arg,
-			Iam: rel,
+			Idx:      i,
+			Cmd:      op,
+			Arg:      arg,
+			AddrMode: addrMode,
 		}
 	}
 	return machine, nil
@@ -217,6 +226,7 @@ func Translate(i string, o string) {
 		logrus.Error("Error parsing .basm file: ", err)
 		return
 	}
+
 	logrus.Info(assembly)
 
 	machine, err := TranslateAssemblyToMachine(assembly)
@@ -236,4 +246,5 @@ func Translate(i string, o string) {
 	if err != nil {
 		logrus.Error("Output file error: ", err)
 	}
+	logrus.Info("done")
 }

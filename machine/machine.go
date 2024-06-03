@@ -11,58 +11,58 @@ import (
 	"strings"
 )
 
-func fileToTokens(f *os.File) map[int]int {
-	scanner := bufio.NewScanner(f)
-	scanner.Split(bufio.ScanRunes)
-
-	// Read the entire file content
-	var content string
+func parseFileToMap(file *os.File) (map[int]int, error) {
+	var AsciiZero uint8 = 48
+	result := make(map[int]int)
+	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		content += scanner.Text()
-	}
-
-	if err := scanner.Err(); err != nil {
-		logrus.Fatal(err)
-	}
-
-	pairs := strings.Split(content, "), (")
-	dict := make(map[int]int)
-
-	for _, pair := range pairs {
-		pair = strings.Trim(pair, "() ")
-		parts := strings.Split(pair, ", ")
+		line := scanner.Text()
+		line = strings.Trim(line, "()")
+		parts := strings.Split(line, ", ")
 		if len(parts) != 2 {
-			logrus.Fatal("Invalid format in file content")
+			return nil, fmt.Errorf("invalid format")
 		}
-		number, err := strconv.Atoi(parts[0])
+
+		key, err := strconv.Atoi(parts[0])
 		if err != nil {
-			logrus.Fatal(err)
+			return nil, fmt.Errorf("invalid integer key: %v", err)
 		}
-		char := rune(parts[1][1]) // Extracting the character inside single quotes
-		dict[number] = int(char)
+
+		value := int(parts[1][1])
+		result[key] = value
+		if parts[1][1] == AsciiZero {
+			result[key] = 0
+		}
 	}
-	return dict
+
+	// Check for scanner errors
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("error reading file: %v", err)
+	}
+
+	return result, nil
 }
 
-func simulation(code models.MachineCode, tokens map[int]int, limit int) (string, int, int) {
+func simulation(code models.MachineCode, tokens map[int]int, limit int, out *string) (int, int) {
 	var data []int
 	for _, i := range code.Data {
 		data = append(data, i.Val)
 	}
-	dp := NewDataPath(data, code.Ints, tokens)
+	dp := NewDataPath(data, code.Ints, tokens, out)
 	cu := NewControlUnit(code.Ops, *dp)
 	for cu.instructionCounter < limit {
+		cu.decodeExecuteInstruction()
 		cu.checkInterrupt()
 		cu.handleInterrupt()
-		cu.decodeExecuteInstruction()
-		cu.incrementIC()
-		cu.checkExit()
+		if cu.halted {
+			break
+		}
 	}
 	if cu.instructionCounter >= limit {
 		logrus.Fatal("Operation limit exceeded")
 	}
-	//logrus.Info("Output buffer: ", dp.outputBuffer)
-	return fmt.Sprint(dp.portCtrl.oBuf), cu.instructionCounter, cu.curTick
+	logrus.Infof("Output buffer: %v", *dp.portCtrl.oBuf)
+	return cu.instructionCounter, cu.curTick
 }
 
 func Main(i string, input string) {
@@ -76,13 +76,16 @@ func Main(i string, input string) {
 	}
 	defer inputFile.Close()
 
-	tokens := fileToTokens(inputFile)
+	tokens, err := parseFileToMap(inputFile)
+	out := ""
 
-	output, instrCounter, ticks := simulation(
+	instrCounter, ticks := simulation(
 		*code,
 		tokens,
 		1000,
+		&out,
 	)
-	logrus.Info("Output: ", output)
-	logrus.Info("instrCounter: ", instrCounter, "ticks: ", ticks)
+	//logrus.Infof("Output: %v", *output)
+	logrus.Info(out)
+	logrus.Info("instrCounter: ", instrCounter, " ticks: ", ticks)
 }

@@ -3,35 +3,31 @@ package models
 type Opcode int
 
 const (
-	//mem
 	LD = iota
 	ST
-	//nav
 	CMP
 	JZ
 	JMP
-	HLT
-	//io
-	EI
-	DI
-	IN
 	OUT
-	IRET
-	//math
-	INC
-	DEC
 	MUL
 	DIV
 	ADD
 	SUB
+	INC
+	DEC
 	NEG
+	HLT
+	IRET
+	IN
+	EI
+	DI
 )
 
 var Opcodes = [...]string{
 	"LD", "ST",
-	"CMP", "JZ", "JMP", "HLT",
-	"EI", "DI", "IN", "OUT", "IRET",
-	"INC", "DEC", "MUL", "DIV", "ADD", "SUB", "NEG",
+	"CMP", "JZ", "JMP",
+	"OUT", "MUL", "DIV", "ADD", "SUB",
+	"INC", "DEC", "NEG", "HLT", "IRET", "IN", "EI", "DI",
 }
 
 func (o Opcode) String() string {
@@ -42,11 +38,23 @@ func (o Opcode) EnumIndex() int {
 	return int(o)
 }
 
+type AddrMode int
+
+const (
+	DIRECT AddrMode = iota
+	DEFAULT
+	RELATIVE
+)
+
+func (m AddrMode) EnumIndex() int {
+	return int(m)
+}
+
 type Operation struct {
-	Idx int    `json:"idx"`
-	Cmd Opcode `json:"cmd"`
-	Arg int    `json:"arg"`
-	Iam bool   `json:"iam"` // indirect addressing mode
+	Idx      int      `json:"idx"`
+	Cmd      Opcode   `json:"cmd"`
+	Arg      int      `json:"arg"`
+	AddrMode AddrMode `json:"adr"` // indirect addressing mode
 }
 
 type DataMemUnit struct {

@@ -1,14 +1,16 @@
 .data
     buf = "abcd", 0
-    i = buf
+    i = 0
+    a = 2
     temp = 0
 
 .int
     #0 .in_isr
 
 .ops
+    LD a
+    JMP .out
     JMP .spin_loop
-    HLT
 
 .spin_loop
     DI
@@ -20,7 +22,13 @@
 .out
     CMP 0
     JZ .end
+    LD (i)
+    ST temp
     OUT #1
+    LD i
+    INC
+    ST i
+    LD temp
     JMP .out
 
 .end
