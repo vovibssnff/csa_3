@@ -1,0 +1,23 @@
+.data
+    buf = "hello", 0
+    i = 0
+    temp = 0
+
+.ops
+    LD 1
+    JMP .out
+
+.out
+    CMP 0
+    JZ .end
+    LD (i)
+    ST temp
+    OUT #1
+    LD i
+    INC
+    ST i
+    LD temp
+    JMP .out
+
+.end
+    HLT
