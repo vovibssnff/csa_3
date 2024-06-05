@@ -1,0 +1,27 @@
+.data
+    a = 1
+    kekw = "damn",
+
+.int
+    #0 .in_isr
+
+.ops
+    LD 1
+    JMP .spin_loop
+
+.spin_loop
+    DI
+    CMP 0
+    JZ .end
+    EI
+    JMP .spin_loop
+
+.end
+    HLT
+
+.in_isr
+    IN
+    OUT #1
+    CMP 0
+    JZ .end
+    IRET

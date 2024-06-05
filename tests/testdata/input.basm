@@ -1,6 +1,7 @@
 .data
     buf = "abcd", 0
-    i = 0
+    ans = "Hi, cutie ",
+    name = "Yourname", 0
     a = 2
     temp = 0
 

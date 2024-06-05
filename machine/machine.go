@@ -43,7 +43,7 @@ func parseFileToMap(file *os.File) (map[int]int, error) {
 	return result, nil
 }
 
-func simulation(code models.MachineCode, tokens map[int]int, limit int, out *string) (int, int) {
+func simulation(code models.MachineCode, tokens map[int]int, limit int, out *string) (string, int, int) {
 	var data []int
 	for _, i := range code.Data {
 		data = append(data, i.Val)
@@ -61,31 +61,39 @@ func simulation(code models.MachineCode, tokens map[int]int, limit int, out *str
 	if cu.instructionCounter >= limit {
 		logrus.Fatal("Operation limit exceeded")
 	}
-	logrus.Infof("Output buffer: %v", *dp.portCtrl.oBuf)
-	return cu.instructionCounter, cu.curTick
+	return cu.logs, cu.instructionCounter, cu.curTick
 }
 
-func Main(i string, input string) {
+func Main(i string, input string, log string) {
 	code, err := translator.Parse(i)
 	if err != nil {
 		logrus.Fatal(err)
 	}
-	inputFile, err := os.Open(input)
-	if err != nil {
-		logrus.Fatal(err)
-	}
+	inputFile, _ := os.Open(input)
 	defer inputFile.Close()
 
-	tokens, err := parseFileToMap(inputFile)
+	logFile, err := os.OpenFile(log, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+	if err != nil {
+		logrus.Fatal("Failed to open log file: ", err)
+	}
+	defer logFile.Close()
+
+	tokens, _ := parseFileToMap(inputFile)
 	out := ""
 
-	instrCounter, ticks := simulation(
+	logs, instrCounter, ticks := simulation(
 		*code,
 		tokens,
 		1000,
 		&out,
 	)
-	//logrus.Infof("Output: %v", *output)
-	logrus.Info(out)
-	logrus.Info("instrCounter: ", instrCounter, " ticks: ", ticks)
+	logs = logs + "Output buffer: " + out + "\ninstrCounter: " + strconv.Itoa(instrCounter) + " ticks: " + strconv.Itoa(ticks)
+
+	_, err = logFile.WriteString(logs)
+	if err != nil {
+		logrus.Fatal("Failed to write to log file: ", err)
+	}
+	if err := logFile.Sync(); err != nil {
+		logrus.Fatal("Failed to sync log file: ", err)
+	}
 }

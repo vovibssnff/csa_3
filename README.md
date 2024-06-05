@@ -1,4 +1,4 @@
-# Stack Machine. Транслятор и модель
+# Аккумуляторный процессор. Транслятор и модель
 
 - Бессонов Владимир Юрьевич, P3212
 - asm | acc | harv | hw | tick -> instr | struct | trap -> stream | port | cstr | prob2 | cache
@@ -6,75 +6,54 @@
 
 ## Язык программирования
 
-Синтаксис в расширенной БНВ.
-
-- `[ ... ]` -- вхождение 0 или 1 раз
-- `{ ... }` -- вхождение 0 или несколько раз
-- `{ ... }-` -- вхождение 1 или несколько раз
+Пример синтаксиса:
 
 ```ebnf
-program ::= section_data "\n" section_text
+.data
+    buf = "abcd", 0
+    i = 0
+    a = 2
+    temp = 0
 
-section_data ::= "section .data:" [ comment ] "\n" { data_line }
+.int
+    #0 .in_isr
 
-data_line ::= variable comment
+.ops
+    LD a
+    JMP .out
+    JMP .spin_loop
 
-variable ::= variable_name ":" variable_value
+.spin_loop
+    DI
+    CMP 0
+    JZ .out
+    EI
+    JMP .spin_loop
 
-variable_name ::= <any of "a-z A-Z _"> { <any of "a-z A-Z 0-9 _"> }
+.out
+    CMP 0
+    JZ .end
+    LD (i)
+    ST temp
+    OUT #1
+    LD i
+    INC
+    ST i
+    LD temp
+    JMP .out
 
-variable_value ::= integer
-                 | string
-                 | buffer
-                 | variable_name
-                 
-section_text ::= "section .text:" [ comment ] "\n" { command_line }
+.end
+    HLT
 
-command_line ::= label comment 
-               | command comment
-
-label ::= <any of "a-z A-Z _"> { <any of "a-z A-Z 0-9 _"> }
-
-command ::= op0 comment
-          | op1 comment
-          
-op0 ::= ST
-      | LD
-      | ADD
-      | SUB
-      | MUL
-      | DIV
-      | INC
-      | DEC
-      | NEG
-      | CMP
-      | JMP
-      | JZ
-      | INR
-      | OUTR
-      | IN
-      | OUT
-      | HLT
-      
-op1 ::= jmp label
-      | jz label
-      | jnz label
-      | call label
-      | lit integer
-      | lit variable
-      | lit in
-      | lit out
-                
-integer ::= [ "-" ] { <any of "0-9"> }-
-
-positive_integer ::= <any of "1-9"> { <any of "0-9"> }
-
-string ::= "\"" { <any symbol except "\t \n"> } "\""
-         | "\'" { <any symbol except "\t \n"> } "\'"
-
-buffer ::= "bf " positive_integer
-
-comment ::= ";" { <any symbol except "\n"> }
+.in_isr
+    IN
+    ST temp
+    ST (i)
+    LD i
+    INC
+    ST i
+    LD temp
+    IRET
 ```
 
 Команды:
@@ -101,43 +80,25 @@ comment ::= ";" { <any symbol except "\n"> }
 
 - Память соответствует Гарвардской архитектуре.
 - Размер машинного слова - 8 бит.
-- Адресация - абсолютная.
+- Три режима адресации: прямая загрузка операнда (numeric литерала), прямая, косвенная.
+- Есть поддержка секций-лейблов. `.data` - переменные, сохранятся в память данных. `.ops` - команды,
+сохранятся в память команд. 
+- Поддержка строковых литералов
+- 
 
 ```text
-           memory
-+----------------------------+
-| 00 : start address (n)     |
-| 01 : interruption vector 1 |
-| 02 : input port            |
-| 03 : output port           |
-| 04 :      ...              | 
-|    part for variables      |
-|           ...              |
-| n  : program start         |
-|           ...              |
-+----------------------------+
+type DataMemUnit struct {
+	Idx int    `json:"idx"` // индекс
+	Key string `json:"-"`   // название переменной, не отразится в машинном коде
+	Sec string `json:"-"`   // название секции, не отразится в машинном коде
+	Val int    `json:"val"` // значение
+}
 ```
-
-- Ячейка памяти `0` соответствует адресу первой инструкции (началу кода, написанного в секции .text).
-- Ячейка памяти `1` соответствует `вектору прерывания 1`.
-- Ячейки памяти `2` и `3` соответствуют `memory-mapped портам ввода-вывода`.
-- С ячейки памяти `4` начинается секция `.data`. Переменные могут быть четырех типов:
-    - `Целочисленные` -- под них отводится одна ячейка памяти;
-    - `Строковые` -- под них отводится `n + 1` последовательных ячеек памяти, где `n` - длина строки
-      (дополнительный символ - `нуль-терминатор`);
-    - `Буфферные` -- под них отводится `n` последовательных ячеек памяти, где `n` - значение из запроса на выделение
-      памяти (`bf n`);
-    - `Ссылочные` -- это `целочисленные` переменные, но при начальной инициализации хранят адрес другой переменной.
-      Под них отводится одна ячейка памяти.
-
-  Переменные располагаются в памяти в таком порядке, в котором они указаны в исходном коде в секции `.data`.
-- С ячейки памяти `n` начинаются инструкции, соответствующие исходному коду, прописанному в секции `.text`.
 
 ## Система команд
 
 Особенности процессора:
 
-- Машинное слово -- 32 бита, знаковое.
 - Доступ к памяти осуществляется по адресу, хранящемуся в специальном регистре `PC (programm counter)`.
   Установка адреса осуществляется тремя разными способами:
     - Путем инкрементирования текущего значения, записанного в `PC`;

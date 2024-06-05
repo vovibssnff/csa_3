@@ -57,7 +57,6 @@ type DataPath struct {
 	addressReg  int
 	dataReg     int
 	accReg      int
-	bufferReg   int
 	zeroFLag    bool
 	negFlag     bool
 }
@@ -71,7 +70,6 @@ func NewDataPath(dataMem []int, ints map[int]int, inputBuffer map[int]int, out *
 		addressReg:  0,
 		dataReg:     0,
 		accReg:      0,
-		bufferReg:   0,
 		zeroFLag:    false,
 		negFlag:     false,
 	}
@@ -98,10 +96,6 @@ func (ic *InterruptionController) generateInterruption(addr int) {
 func (ic *InterruptionController) unsetInterruption() {
 	ic.interrupt = false
 	ic.isrAddr = 0
-}
-
-func (dp *DataPath) latchBufferReg() {
-	dp.bufferReg = dp.accReg
 }
 
 func (dp *DataPath) latchAddressReg(addr int) {

@@ -34,6 +34,7 @@ func ParseAssemblyCode(filename string) (models.Assembly, error) {
 	lines := strings.Split(string(content), "\n")
 	var currentSection string
 	inx := 0
+	termFlag := 0
 
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
@@ -59,9 +60,19 @@ func ParseAssemblyCode(filename string) (models.Assembly, error) {
 						inx += 1
 					}
 					// Add the null terminator
-					dataSection = append(dataSection, models.DataMemUnit{Idx: inx, Key: key, Val: 0})
-					inx += 1
-					addressMap[key] = inx - len(lit) - 1 // Store the starting address of the string
+					split := strings.Split(value, ", ")
+					if len(split) == 2 && split[1] == "0" {
+						dataSection = append(dataSection, models.DataMemUnit{Idx: inx, Key: key, Val: 0})
+						inx += 1
+						termFlag += 1
+					}
+					if termFlag == 1 || termFlag == 0 {
+						termFlag += 1
+						addressMap[key] = inx - len(lit) - 1 // Store the starting address of the string
+					} else {
+						termFlag = 0
+						addressMap[key] = inx - len(lit)
+					}
 				} else if num, err := strconv.Atoi(value); err == nil {
 					// Handle numeric values
 					dataSection = append(dataSection, models.DataMemUnit{Idx: inx, Key: key, Val: num})
@@ -227,7 +238,7 @@ func Translate(i string, o string) {
 		return
 	}
 
-	logrus.Info(assembly)
+	//logrus.Info(assembly)
 
 	machine, err := TranslateAssemblyToMachine(assembly)
 	if err != nil {
@@ -235,7 +246,7 @@ func Translate(i string, o string) {
 		return
 	}
 
-	logrus.Info(machine)
+	//logrus.Info(machine)
 
 	machineJSON, err := json.MarshalIndent(machine, "", "    ")
 	if err != nil {
@@ -246,5 +257,5 @@ func Translate(i string, o string) {
 	if err != nil {
 		logrus.Error("Output file error: ", err)
 	}
-	logrus.Info("done")
+	//logrus.Info("done")
 }

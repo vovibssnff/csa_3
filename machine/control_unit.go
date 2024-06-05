@@ -2,12 +2,14 @@ package machine
 
 import (
 	"csa_3/models"
+	"fmt"
 	"github.com/sirupsen/logrus"
 	"os"
 	"sort"
 )
 
 type ControlUnit struct {
+	logs               string
 	program            []models.Operation
 	instructionPointer int
 	tempPointer        int
@@ -22,6 +24,7 @@ type ControlUnit struct {
 
 func NewControlUnit(program []models.Operation, dataPath DataPath) *ControlUnit {
 	return &ControlUnit{
+		logs:               "",
 		program:            program,
 		instructionPointer: 0,
 		instructionCounter: 0,
@@ -34,26 +37,10 @@ func NewControlUnit(program []models.Operation, dataPath DataPath) *ControlUnit 
 }
 
 func (cu *ControlUnit) printState() {
-	logrus.Infof("TICK: %3d | IC: %3d | CMD: %4s | ARG: %3d | AC: %3d | DR: %3d | AR: %3d | INT: %t",
+	cu.logs = fmt.Sprintf(cu.logs+"TICK: %3d | IC: %3d | CMD: %4s | ARG: %3d | AC: %3d | DR: %3d | AR: %3d | INT: %t \n",
 		cu.curTick, cu.instructionCounter, cu.instructionReg.Cmd, cu.instructionReg.Arg, cu.dataPath.accReg, cu.dataPath.dataReg, cu.dataPath.addressReg, cu.dataPath.intCtrl.interrupt)
-}
-
-func removeFirstPair(m map[int]int) map[int]int {
-	found := false
-	for k := range m {
-		if !found {
-			delete(m, k)
-			found = true
-		}
-	}
-	return m
-}
-
-func getFirstPair(m map[int]int) (int, int) {
-	for k := range m {
-		return k, m[k]
-	}
-	return 0, 0
+	//print(cu.logs+"TICK: %3d | IC: %3d | CMD: %4s | ARG: %3d | AC: %3d | DR: %3d | AR: %3d | INT: %t \n",
+	//	cu.curTick, cu.instructionCounter, cu.instructionReg.Cmd, cu.instructionReg.Arg, cu.dataPath.accReg, cu.dataPath.dataReg, cu.dataPath.addressReg, cu.dataPath.intCtrl.interrupt)
 }
 
 func sortedKeys(m map[int]int) []int {
@@ -118,8 +105,6 @@ func (cu *ControlUnit) handleInterrupt() {
 	}
 	//logrus.Info("here")
 	cu.latchTempPointer()
-	cu.dataPath.latchBufferReg()
-	cu.tick()
 	cu.latchInstructionPointer(cu.dataPath.intCtrl.isrAddr)
 	cu.tick()
 	cu.handlingInterrupt = true
@@ -127,7 +112,6 @@ func (cu *ControlUnit) handleInterrupt() {
 
 func (cu *ControlUnit) exitInterrupt() {
 	cu.handlingInterrupt = false
-	cu.dataPath.latchAcc(cu.dataPath.bufferReg)
 	cu.latchInstructionPointer(cu.tempPointer)
 	cu.dataPath.intCtrl.unsetInterruption()
 
@@ -189,11 +173,8 @@ func (cu *ControlUnit) decodeExecuteCFInstruction(operation models.Operation) bo
 	if operation.Cmd == models.CMP {
 		cu.dataPath.latchDataReg(DRir, &operation.Arg)
 		cu.tick()
-		cu.dataPath.latchBufferReg()
 		cu.dataPath.sub()
 		cu.dataPath.setFlags()
-		cu.tick()
-		cu.dataPath.latchAcc(cu.dataPath.bufferReg)
 		cu.tick()
 		cu.incrementInstructionPointer()
 		return true
@@ -242,6 +223,8 @@ func (cu *ControlUnit) decodeExecuteInstruction() {
 			logrus.Fatal("Cannot exit interrupt")
 		}
 		cu.exitInterrupt()
+		cu.incrementIC()
+		return
 	}
 	if opcode.EnumIndex() == models.INC {
 		cu.dataPath.inc()
