@@ -24,10 +24,8 @@ jobs:
       run: |
         mkdir -p test-results
         go test -v ./... | tee test-results/output.txt | go tool test2json > test-results/output.json
-      continue-on-error: true
 
     - name: Show test results
-      if: failure()
       run: cat test-results/output.txt
 
     - name: Upload test results
