@@ -25,10 +25,7 @@ jobs:
         mkdir -p test-results
         go test -v ./... | tee test-results/output.txt | go tool test2json > test-results/output.json
 
-    - name: Show test results
-      run: cat test-results/output.txt
-
-    - name: Upload test results
+    - name: Upload test results as artifact
       uses: actions/upload-artifact@v2
       with:
         name: test-results
