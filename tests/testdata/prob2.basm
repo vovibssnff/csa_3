@@ -1,0 +1,33 @@
+.data
+    first = 1
+    second = 2
+    cur = 0
+    sum = 2
+
+.ops
+    LD first          ; Load 'first' into the accumulator
+    ADD second        ; Add 'second' to the accumulator
+    ST cur            ; Store the result in 'cur'
+    LD cur
+    CMP 4000000
+    JN .continue      ; Halt if 'cur' is greater than 4000000
+    HLT
+
+.continue
+    JE .add_sum       ; Jump to .add_sum if 'cur' is even (remainder is zero)
+    JMP .next         ; Otherwise, jump to .next
+
+.add_sum
+    LD sum            ; Load 'sum' into the accumulator
+    ADD cur           ; Add 'cur' to the accumulator
+    ST sum            ; Store the result back in 'sum'
+
+.next
+    LD second         ; Load 'second' into the accumulator
+    ST first          ; Store the value in 'first'
+    LD cur            ; Load 'cur' into the accumulator
+    ST second         ; Store the value in 'second'
+    JMP .ops
+
+.end
+    HLT               ; Halt the program

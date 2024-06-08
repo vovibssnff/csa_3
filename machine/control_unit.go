@@ -1,7 +1,6 @@
 package machine
 
 import (
-	"csa_3/models"
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"os"
@@ -9,11 +8,12 @@ import (
 )
 
 type ControlUnit struct {
+	intCtrl            InterruptionController
 	logs               string
-	program            []models.Operation
+	programMemory      []Operation
 	instructionPointer int
 	tempPointer        int
-	instructionReg     models.Operation
+	instructionReg     Operation
 	instructionCounter int
 	dataPath           DataPath
 	curTick            int
@@ -22,10 +22,11 @@ type ControlUnit struct {
 	handlingInterrupt  bool
 }
 
-func NewControlUnit(program []models.Operation, dataPath DataPath) *ControlUnit {
+func NewControlUnit(program []Operation, dataPath DataPath) *ControlUnit {
 	return &ControlUnit{
+		intCtrl:            *NewInterruptionController(),
 		logs:               "",
-		program:            program,
+		programMemory:      program,
 		instructionPointer: 0,
 		instructionCounter: 0,
 		dataPath:           dataPath,
@@ -36,11 +37,23 @@ func NewControlUnit(program []models.Operation, dataPath DataPath) *ControlUnit 
 	}
 }
 
+type InterruptionController struct {
+	interrupt bool
+	isrAddr   int
+}
+
+func NewInterruptionController() *InterruptionController {
+	return &InterruptionController{
+		interrupt: false,
+		isrAddr:   0,
+	}
+}
+
 func (cu *ControlUnit) printState() {
-	cu.logs = fmt.Sprintf(cu.logs+"TICK: %3d | IC: %3d | CMD: %4s | ARG: %3d | AC: %3d | DR: %3d | AR: %3d | INT: %t \n",
-		cu.curTick, cu.instructionCounter, cu.instructionReg.Cmd, cu.instructionReg.Arg, cu.dataPath.accReg, cu.dataPath.dataReg, cu.dataPath.addressReg, cu.dataPath.intCtrl.interrupt)
-	//print(cu.logs+"TICK: %3d | IC: %3d | CMD: %4s | ARG: %3d | AC: %3d | DR: %3d | AR: %3d | INT: %t \n",
-	//	cu.curTick, cu.instructionCounter, cu.instructionReg.Cmd, cu.instructionReg.Arg, cu.dataPath.accReg, cu.dataPath.dataReg, cu.dataPath.addressReg, cu.dataPath.intCtrl.interrupt)
+	out := fmt.Sprintf("TICK: %3d | IC: %3d | CMD: %4s | ARG: %8d | AC: %8d | DR: %8d | AR: %3d | INT: %t \n",
+		cu.curTick, cu.instructionCounter, cu.instructionReg.Cmd, cu.instructionReg.Arg, cu.dataPath.accReg, cu.dataPath.dataReg, cu.dataPath.addressReg, cu.intCtrl.interrupt)
+	cu.logs = fmt.Sprintf(cu.logs + out)
+	print(out)
 }
 
 func sortedKeys(m map[int]int) []int {
@@ -90,7 +103,7 @@ func (cu *ControlUnit) checkInterrupt() {
 		char := cu.dataPath.portCtrl.iBuf[tick]
 		for addr, port := range cu.dataPath.portCtrl.isrMap {
 			if tick <= cu.curTick && port == cu.dataPath.portCtrl.iPort && cu.ei {
-				cu.dataPath.portCtrl.interruptionRequest(&cu.dataPath.intCtrl, addr)
+				cu.dataPath.portCtrl.interruptionRequest(&cu.intCtrl, addr)
 				cu.dataPath.portCtrl.bus = char
 				break
 			}
@@ -100,12 +113,12 @@ func (cu *ControlUnit) checkInterrupt() {
 
 func (cu *ControlUnit) handleInterrupt() {
 	//logrus.Info(cu.dataPath.intCtrl.interrupt, " ", cu.ei, " ", cu.handlingInterrupt)
-	if !cu.dataPath.intCtrl.interrupt || !cu.ei || cu.handlingInterrupt {
+	if !cu.intCtrl.interrupt || !cu.ei || cu.handlingInterrupt {
 		return
 	}
 	//logrus.Info("here")
 	cu.latchTempPointer()
-	cu.latchInstructionPointer(cu.dataPath.intCtrl.isrAddr)
+	cu.latchInstructionPointer(cu.intCtrl.isrAddr)
 	cu.tick()
 	cu.handlingInterrupt = true
 }
@@ -113,7 +126,7 @@ func (cu *ControlUnit) handleInterrupt() {
 func (cu *ControlUnit) exitInterrupt() {
 	cu.handlingInterrupt = false
 	cu.latchInstructionPointer(cu.tempPointer)
-	cu.dataPath.intCtrl.unsetInterruption()
+	cu.intCtrl.unsetInterruption()
 
 	sortedBuf := sortedKeys(cu.dataPath.portCtrl.iBuf)
 	tick := sortedBuf[0]
@@ -122,17 +135,17 @@ func (cu *ControlUnit) exitInterrupt() {
 }
 
 func (cu *ControlUnit) instructionFetch() {
-	cu.instructionReg = cu.program[cu.instructionPointer]
+	cu.instructionReg = cu.programMemory[cu.instructionPointer]
 	cu.tick()
 }
 
 func (cu *ControlUnit) operandFetch() {
-	if cu.instructionReg.Cmd.EnumIndex() <= 9 {
+	if cu.instructionReg.Cmd.EnumIndex() <= 10 {
 		arg := cu.instructionReg.Arg
-		if cu.instructionReg.AddrMode == models.DIRECT { // аргумент - константа
+		if cu.instructionReg.AddrMode == DIRECT { // аргумент - константа
 			cu.dataPath.latchDataReg(DRir, &cu.instructionReg.Arg)
 			cu.tick()
-		} else if cu.instructionReg.AddrMode == models.DEFAULT { // аргумент - адрес операнда
+		} else if cu.instructionReg.AddrMode == DEFAULT { // аргумент - адрес операнда
 			cu.dataPath.latchAddressReg(arg)
 			cu.tick()
 			cu.dataPath.latchDataReg(DRmem, nil)
@@ -150,33 +163,50 @@ func (cu *ControlUnit) operandFetch() {
 	}
 }
 
-func (cu *ControlUnit) decodeExecuteCFInstruction(operation models.Operation) bool {
-	if operation.Cmd == models.HLT {
+func (cu *ControlUnit) decodeExecuteCFInstruction(operation Operation) bool {
+	if operation.Cmd == HLT {
 		cu.halted = true
 		return true
 	}
-	if operation.Cmd == models.JMP {
-		cu.instructionPointer = cu.program[operation.Arg].Idx
+	if operation.Cmd == JMP {
+		cu.instructionPointer = cu.programMemory[operation.Arg].Idx
 		cu.tick()
 		return true
 	}
-	if operation.Cmd == models.JZ {
+	if operation.Cmd == JZ {
 		if cu.dataPath.zeroFLag {
-			cu.instructionPointer = cu.program[operation.Arg].Idx
-			cu.tick()
+			cu.instructionPointer = cu.programMemory[operation.Arg].Idx
 		} else {
 			cu.incrementInstructionPointer()
-			cu.tick()
 		}
+		cu.tick()
 		return true
 	}
-	if operation.Cmd == models.CMP {
+	if operation.Cmd == JE {
+		if cu.dataPath.evenFlag {
+			cu.instructionPointer = cu.programMemory[operation.Arg].Idx
+		} else {
+			cu.incrementInstructionPointer()
+		}
+		cu.tick()
+		return true
+	}
+	if operation.Cmd == JN {
+		if cu.dataPath.negFlag {
+			cu.instructionPointer = cu.programMemory[operation.Arg].Idx
+		} else {
+			cu.incrementInstructionPointer()
+		}
+		cu.tick()
+		return true
+	}
+	if operation.Cmd == CMP {
 		cu.dataPath.latchDataReg(DRir, &operation.Arg)
 		cu.tick()
 		cu.dataPath.sub()
 		cu.dataPath.setFlags()
-		cu.tick()
 		cu.incrementInstructionPointer()
+		cu.tick()
 		return true
 	}
 	return false
@@ -190,12 +220,12 @@ func (cu *ControlUnit) decodeExecuteInstruction() {
 	}
 	cu.operandFetch() // 0 or 2 ticks
 	opcode := cu.instructionReg.Cmd
-	if opcode.EnumIndex() == models.LD {
+	if opcode.EnumIndex() == LD {
 		cu.dataPath.latchAcc(cu.dataPath.dataReg)
 		cu.dataPath.setFlags()
 		cu.tick()
 	}
-	if opcode.EnumIndex() == models.ST {
+	if opcode.EnumIndex() == ST {
 		cu.dataPath.latchAddressReg(cu.dataPath.dataReg)
 		cu.tick()
 		cu.dataPath.latchDataReg(DRacc, nil)
@@ -203,7 +233,7 @@ func (cu *ControlUnit) decodeExecuteInstruction() {
 		cu.dataPath.saveToMemory()
 		cu.tick()
 	}
-	if opcode.EnumIndex() == models.IN {
+	if opcode.EnumIndex() == IN {
 		if !cu.handlingInterrupt {
 			logrus.Fatal("Incorrect IN usage, interrupts disabled")
 		}
@@ -211,61 +241,61 @@ func (cu *ControlUnit) decodeExecuteInstruction() {
 		cu.dataPath.setFlags()
 		cu.tick()
 	}
-	if opcode.EnumIndex() == models.OUT {
+	if opcode.EnumIndex() == OUT {
 		if cu.dataPath.dataReg != cu.dataPath.portCtrl.oPort {
 			logrus.Fatal("Incorrect OUT usage, wrong port")
 		}
 		cu.dataPath.out()
 		cu.tick()
 	}
-	if opcode.EnumIndex() == models.IRET {
+	if opcode.EnumIndex() == IRET {
 		if !cu.handlingInterrupt {
 			logrus.Fatal("Cannot exit interrupt")
 		}
-		cu.exitInterrupt()
 		cu.incrementIC()
+		cu.exitInterrupt()
 		return
 	}
-	if opcode.EnumIndex() == models.INC {
+	if opcode.EnumIndex() == INC {
 		cu.dataPath.inc()
 		cu.dataPath.setFlags()
 		cu.tick()
 	}
-	if opcode.EnumIndex() == models.DEC {
+	if opcode.EnumIndex() == DEC {
 		cu.dataPath.dec()
 		cu.dataPath.setFlags()
 		cu.tick()
 	}
-	if opcode.EnumIndex() == models.ADD {
+	if opcode.EnumIndex() == ADD {
 		cu.dataPath.add()
 		cu.dataPath.setFlags()
 		cu.tick()
 	}
-	if opcode.EnumIndex() == models.SUB {
+	if opcode.EnumIndex() == SUB {
 		cu.dataPath.sub()
 		cu.dataPath.setFlags()
 		cu.tick()
 	}
-	if opcode.EnumIndex() == models.MUL {
+	if opcode.EnumIndex() == MUL {
 		cu.dataPath.mul()
 		cu.dataPath.setFlags()
 		cu.tick()
 	}
-	if opcode.EnumIndex() == models.DIV {
+	if opcode.EnumIndex() == DIV {
 		cu.dataPath.div()
 		cu.dataPath.setFlags()
 		cu.tick()
 	}
-	if opcode.EnumIndex() == models.NEG {
+	if opcode.EnumIndex() == NEG {
 		cu.dataPath.neg()
 		cu.dataPath.setFlags()
 		cu.tick()
 	}
-	if opcode.EnumIndex() == models.EI {
+	if opcode.EnumIndex() == EI {
 		cu.setEI(true)
 		cu.tick()
 	}
-	if opcode.EnumIndex() == models.DI {
+	if opcode.EnumIndex() == DI {
 		cu.setEI(false)
 		cu.tick()
 	}

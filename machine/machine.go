@@ -2,8 +2,6 @@ package machine
 
 import (
 	"bufio"
-	"csa_3/models"
-	"csa_3/translator"
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"os"
@@ -43,7 +41,7 @@ func parseFileToMap(file *os.File) (map[int]int, error) {
 	return result, nil
 }
 
-func simulation(code models.MachineCode, tokens map[int]int, limit int, out *string) (string, int, int) {
+func simulation(code MachineCode, tokens map[int]int, limit int, out *string) (string, int, int) {
 	var data []int
 	for _, i := range code.Data {
 		data = append(data, i.Val)
@@ -65,7 +63,7 @@ func simulation(code models.MachineCode, tokens map[int]int, limit int, out *str
 }
 
 func Main(i string, input string, log string) {
-	code, err := translator.Parse(i)
+	code, err := Parse(i)
 	if err != nil {
 		logrus.Fatal(err)
 	}
@@ -87,8 +85,9 @@ func Main(i string, input string, log string) {
 		1000,
 		&out,
 	)
-	logs = logs + "Output buffer: " + out + "\ninstrCounter: " + strconv.Itoa(instrCounter) + " ticks: " + strconv.Itoa(ticks)
-
+	output := "Output buffer: " + out + "\ninstrCounter: " + strconv.Itoa(instrCounter) + " ticks: " + strconv.Itoa(ticks)
+	logs = logs + output
+	println(output)
 	_, err = logFile.WriteString(logs)
 	if err != nil {
 		logrus.Fatal("Failed to write to log file: ", err)

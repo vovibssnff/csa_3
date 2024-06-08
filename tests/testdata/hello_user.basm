@@ -1,63 +1,63 @@
-.data
-    prompt = "What's your name?", 0
-    ans = "Hi, cutie ",
-    name = "usrname", 0
-    i = prompt
-    name_adr = name
-    ans_adr = ans
-    temp = 0
-    flag = 0
+    .data
+        prompt = "What's your name?", 0
+        ans = "Hi, cutie ",
+        name = "usrname", 0
+        i = prompt
+        name_adr = name
+        ans_adr = ans
+        temp = 0
+        flag = 0
 
-.int
-    #0 .in_isr
+    .int
+        #0 .in_isr
 
-.ops
-    JMP .prmpt
+    .ops
+        JMP .prmpt
 
-.prmpt
-    LD (i)
-    ST temp
-    OUT #1
-    LD i
-    INC
-    ST i
-    LD temp
-    CMP 0
-    JZ .prepare
-    JMP .prmpt
+    .prmpt
+        LD (i)
+        ST temp
+        OUT #1
+        LD i
+        INC
+        ST i
+        LD temp
+        CMP 0
+        JZ .prepare
+        JMP .prmpt
 
-.prepare
-    INC
-.spin_loop
-    DI
-    CMP 0
-    JZ .next
-    EI
-    JMP .spin_loop
+    .prepare
+        INC
+    .spin_loop
+        DI
+        CMP 0
+        JZ .next
+        EI
+        JMP .spin_loop
 
-.next
-    LD 1
-.greeting
-    LD (ans_adr)
-    ST temp
-    OUT #1
-    LD ans_adr
-    INC
-    ST ans_adr
-    LD temp
-    CMP 0
-    JZ .end
-    JMP .greeting
+    .next
+        LD 1
+    .greeting
+        LD (ans_adr)
+        ST temp
+        OUT #1
+        LD ans_adr
+        INC
+        ST ans_adr
+        LD temp
+        CMP 0
+        JZ .end
+        JMP .greeting
 
-.end
-    HLT
+    .end
+        HLT
 
-.in_isr
-    IN
-    ST temp
-    ST (name_adr)
-    LD name_adr
-    INC
-    ST name_adr
-    LD temp
-    IRET
+    .in_isr
+        IN
+        ST temp
+        ST (name_adr)
+        LD name_adr
+        INC
+        ST name_adr
+        LD temp
+        IRET

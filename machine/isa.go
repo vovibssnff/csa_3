@@ -1,4 +1,4 @@
-package models
+package machine
 
 type Opcode int
 
@@ -8,6 +8,8 @@ const (
 	CMP
 	JZ
 	JMP
+	JE
+	JN
 	OUT
 	MUL
 	DIV
@@ -25,7 +27,7 @@ const (
 
 var Opcodes = [...]string{
 	"LD", "ST",
-	"CMP", "JZ", "JMP",
+	"CMP", "JZ", "JMP", "JE", "JN",
 	"OUT", "MUL", "DIV", "ADD", "SUB",
 	"INC", "DEC", "NEG", "HLT", "IRET", "IN", "EI", "DI",
 }
@@ -54,7 +56,7 @@ type Operation struct {
 	Idx      int      `json:"idx"`
 	Cmd      Opcode   `json:"cmd"`
 	Arg      int      `json:"arg"`
-	AddrMode AddrMode `json:"adr"` // indirect addressing mode
+	AddrMode AddrMode `json:"adr"`
 }
 
 type DataMemUnit struct {

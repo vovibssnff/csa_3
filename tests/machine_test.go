@@ -2,7 +2,6 @@ package translator_test
 
 import (
 	"csa_3/machine"
-	"csa_3/translator"
 	"gotest.tools/v3/golden"
 	"os"
 	"testing"
@@ -19,11 +18,12 @@ func TestTranslateAndSimulate(t *testing.T) {
 		{"testdata/hello.basm", "testdata/hello.json", "", "testdata/log.txt", "golden_hello.txt"},
 		{"testdata/cat.basm", "testdata/cat.json", "testdata/in_cat.txt", "testdata/log.txt", "golden_cat.txt"},
 		{"testdata/hello_user.basm", "testdata/hello_user.json", "testdata/in_cat.txt", "testdata/log.txt", "golden_hello_user.txt"},
+		{"testdata/prob2.basm", "testdata/prob2.json", "", "testdata/log.txt", "golden_prob2.txt"},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.inputFileName, func(t *testing.T) {
-			translator.Translate(tc.inputFileName, tc.machineFileName)
+			machine.Translate(tc.inputFileName, tc.machineFileName)
 			machine.Main(tc.machineFileName, tc.configFile, tc.outputFileName)
 			output, err := os.ReadFile(tc.outputFileName)
 			if err != nil {

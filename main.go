@@ -2,7 +2,6 @@ package main
 
 import (
 	"csa_3/machine"
-	"csa_3/translator"
 	"flag"
 	"github.com/sirupsen/logrus"
 )
@@ -20,7 +19,7 @@ func main() {
 
 	// Dereference the pointers to get the actual flag values
 	if *translateFlag {
-		translator.Translate(*inputFile, *outputFile)
+		machine.Translate(*inputFile, *outputFile)
 	}
 
 	if *executeFlag {

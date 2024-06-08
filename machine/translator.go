@@ -1,7 +1,6 @@
-package translator
+package machine
 
 import (
-	"csa_3/models"
 	"encoding/json"
 	"errors"
 	"github.com/sirupsen/logrus"
@@ -10,25 +9,25 @@ import (
 	"strings"
 )
 
-func ParseOpcode(op string) (models.Opcode, error) {
-	for i, v := range models.Opcodes {
+func ParseOpcode(op string) (Opcode, error) {
+	for i, v := range Opcodes {
 		if v == op {
-			return models.Opcode(i), nil
+			return Opcode(i), nil
 		}
 	}
 	return 0, errors.New("invalid opcode")
 }
 
-func ParseAssemblyCode(filename string) (models.Assembly, error) {
-	var dataSection []models.DataMemUnit
+func ParseAssemblyCode(filename string) (Assembly, error) {
+	var dataSection []DataMemUnit
 	ops := make([]string, 0)
-	var sections []models.Section
+	var sections []Section
 	ints := make(map[string]int)
 	addressMap := make(map[string]int)
 
 	content, err := os.ReadFile(filename)
 	if err != nil {
-		return models.Assembly{}, err
+		return Assembly{}, err
 	}
 
 	lines := strings.Split(string(content), "\n")
@@ -56,13 +55,13 @@ func ParseAssemblyCode(filename string) (models.Assembly, error) {
 					lastCommaInx := strings.LastIndex(value, ",")
 					lit := strings.Trim(strings.TrimSpace(value[:lastCommaInx]), "\"")
 					for _, char := range lit {
-						dataSection = append(dataSection, models.DataMemUnit{Idx: inx, Key: key, Val: int(char)})
+						dataSection = append(dataSection, DataMemUnit{Idx: inx, Key: key, Val: int(char)})
 						inx += 1
 					}
 					// Add the null terminator
 					split := strings.Split(value, ", ")
 					if len(split) == 2 && split[1] == "0" {
-						dataSection = append(dataSection, models.DataMemUnit{Idx: inx, Key: key, Val: 0})
+						dataSection = append(dataSection, DataMemUnit{Idx: inx, Key: key, Val: 0})
 						inx += 1
 						termFlag += 1
 					}
@@ -75,12 +74,12 @@ func ParseAssemblyCode(filename string) (models.Assembly, error) {
 					}
 				} else if num, err := strconv.Atoi(value); err == nil {
 					// Handle numeric values
-					dataSection = append(dataSection, models.DataMemUnit{Idx: inx, Key: key, Val: num})
+					dataSection = append(dataSection, DataMemUnit{Idx: inx, Key: key, Val: num})
 					inx += 1
 					addressMap[key] = inx - 1 // Store the address of the numeric value
 				} else if addr, ok := addressMap[value]; ok {
 					// Handle address of another variable
-					dataSection = append(dataSection, models.DataMemUnit{Idx: inx, Key: key, Val: addr})
+					dataSection = append(dataSection, DataMemUnit{Idx: inx, Key: key, Val: addr})
 					inx += 1
 					addressMap[key] = addr // Store the same address as the referenced variable
 				}
@@ -94,18 +93,18 @@ func ParseAssemblyCode(filename string) (models.Assembly, error) {
 			}
 		} else if currentSection != "" {
 			parts := strings.SplitN(line, " ", 3)
-			sections = append(sections, models.Section{Name: currentSection, Idx: inx})
+			sections = append(sections, Section{Name: currentSection, Idx: inx})
 			if len(parts) > 1 && strings.HasPrefix(parts[1], "\"") && strings.Contains(parts[1], "\"") {
 				lit := strings.Trim(strings.TrimSpace(parts[1]), "\"")
 				lit = strings.ReplaceAll(lit, `"`, "")
 				lit = strings.ReplaceAll(lit, ",", "")
 				ops = append(ops, parts[0]+" "+strconv.Itoa(inx))
 				for _, char := range lit {
-					dataSection = append(dataSection, models.DataMemUnit{Idx: inx, Key: "", Val: int(char)})
+					dataSection = append(dataSection, DataMemUnit{Idx: inx, Key: "", Val: int(char)})
 					inx += 1
 				}
 				// Add the null terminator
-				dataSection = append(dataSection, models.DataMemUnit{Idx: inx, Key: "", Val: 0})
+				dataSection = append(dataSection, DataMemUnit{Idx: inx, Key: "", Val: 0})
 				inx += 1
 			} else if len(parts) > 1 {
 				arg := parts[1]
@@ -122,7 +121,7 @@ func ParseAssemblyCode(filename string) (models.Assembly, error) {
 		}
 	}
 
-	return models.Assembly{
+	return Assembly{
 		DataSection: dataSection,
 		Ops:         ops,
 		Interrupts:  ints,
@@ -130,10 +129,10 @@ func ParseAssemblyCode(filename string) (models.Assembly, error) {
 	}, nil
 }
 
-func TranslateAssemblyToMachine(assembly models.Assembly) (models.MachineCode, error) {
-	machine := models.MachineCode{
+func TranslateAssemblyToMachine(assembly Assembly) (MachineCode, error) {
+	machine := MachineCode{
 		Data: assembly.DataSection,
-		Ops:  make([]models.Operation, len(assembly.Ops)),
+		Ops:  make([]Operation, len(assembly.Ops)),
 	}
 	// section resolving in .int section
 	ints := make(map[int]int)
@@ -154,13 +153,13 @@ func TranslateAssemblyToMachine(assembly models.Assembly) (models.MachineCode, e
 			logrus.Fatal(err, parts[0])
 		}
 		var arg int
-		addrMode := models.DIRECT
+		addrMode := DIRECT
 
 		// arg commands
 		if len(parts) > 1 {
 			arg, _ = strconv.Atoi(strings.Trim(parts[1], "#"))
 			// literal check
-			addrMode = models.DIRECT
+			addrMode = DIRECT
 			a, err := strconv.Atoi(parts[1])
 			if parts[1][0] == '"' || err == nil {
 				arg = a
@@ -170,7 +169,7 @@ func TranslateAssemblyToMachine(assembly models.Assembly) (models.MachineCode, e
 			if parts[1][0] == '.' || err == nil {
 				for i, sec := range assembly.Sections {
 					if parts[1] == sec.Name {
-						addrMode = models.DEFAULT
+						addrMode = DEFAULT
 						arg = i
 						break
 					}
@@ -182,9 +181,9 @@ func TranslateAssemblyToMachine(assembly models.Assembly) (models.MachineCode, e
 				for _, v := range assembly.DataSection {
 					if parts[1][1:len(parts[1])-1] == v.Key {
 						if parts[0] == "ST" {
-							addrMode = models.DEFAULT
+							addrMode = DEFAULT
 						} else {
-							addrMode = models.RELATIVE
+							addrMode = RELATIVE
 						}
 						arg = v.Idx
 					}
@@ -195,16 +194,16 @@ func TranslateAssemblyToMachine(assembly models.Assembly) (models.MachineCode, e
 			for _, v := range assembly.DataSection {
 				if parts[1] == v.Key {
 					if parts[0] == "ST" {
-						addrMode = models.DIRECT
+						addrMode = DIRECT
 					} else {
-						addrMode = models.DEFAULT
+						addrMode = DEFAULT
 					}
 					arg = v.Idx
 				}
 			}
 		}
 
-		machine.Ops[i] = models.Operation{
+		machine.Ops[i] = Operation{
 			Idx:      i,
 			Cmd:      op,
 			Arg:      arg,
@@ -214,14 +213,14 @@ func TranslateAssemblyToMachine(assembly models.Assembly) (models.MachineCode, e
 	return machine, nil
 }
 
-func Parse(filename string) (*models.MachineCode, error) {
+func Parse(filename string) (*MachineCode, error) {
 	fileContent, err := os.ReadFile(filename)
 	if err != nil {
 		logrus.Error("Error reading JSON file: ", err)
 		return nil, err
 	}
 
-	var machineCode models.MachineCode
+	var machineCode MachineCode
 	err = json.Unmarshal(fileContent, &machineCode)
 	if err != nil {
 		logrus.Error("Error unmarshalling JSON to machine code: ", err)

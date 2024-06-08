@@ -37,21 +37,9 @@ func NewIOPortController(IPORT int, OPORT int, IBUF map[int]int, OBUF *string, i
 	}
 }
 
-type InterruptionController struct {
-	interrupt bool
-	isrAddr   int
-}
-
-func NewInterruptionController() *InterruptionController {
-	return &InterruptionController{
-		interrupt: false,
-		isrAddr:   0,
-	}
-}
-
 type DataPath struct {
-	portCtrl    IOPortController
-	intCtrl     InterruptionController
+	portCtrl IOPortController
+
 	dataMemSize int
 	dataMem     []int
 	addressReg  int
@@ -59,12 +47,12 @@ type DataPath struct {
 	accReg      int
 	zeroFLag    bool
 	negFlag     bool
+	evenFlag    bool
 }
 
 func NewDataPath(dataMem []int, ints map[int]int, inputBuffer map[int]int, out *string) *DataPath {
 	return &DataPath{
 		portCtrl:    *NewIOPortController(0, 1, inputBuffer, out, ints),
-		intCtrl:     *NewInterruptionController(),
 		dataMemSize: len(dataMem),
 		dataMem:     dataMem,
 		addressReg:  0,
@@ -72,6 +60,7 @@ func NewDataPath(dataMem []int, ints map[int]int, inputBuffer map[int]int, out *
 		accReg:      0,
 		zeroFLag:    false,
 		negFlag:     false,
+		evenFlag:    false,
 	}
 }
 
@@ -127,6 +116,7 @@ func (dp *DataPath) latchAcc(val int) {
 func (dp *DataPath) setFlags() {
 	dp.zeroFLag = dp.accReg == 0
 	dp.negFlag = dp.accReg < 0
+	dp.evenFlag = dp.accReg%2 == 0
 }
 
 func (dp *DataPath) add() {
