@@ -239,70 +239,39 @@ type Operation struct {
 CI при помощи Github Actions:
 
 ```yaml
-name: Stack-Machine
+name: Go
 
 on:
   push:
-    branches:
-      - main
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Set up Go
+        uses: actions/setup-go@v4
         with:
-          python-version: 3.12
+          go-version: '1.20'
 
       - name: Install dependencies
+        run: go mod tidy
+
+      - name: Run tests with test2json
         run: |
-          python3 -m pip install --upgrade pip
-          pip3 install poetry
-          poetry install
+          mkdir -p test-results
+          go test -v ./... | tee test-results/output.txt | go tool test2json > test-results/output.json
 
-      - name: Run tests and collect coverage
-        run: |
-          poetry run coverage run -m pytest .
-          poetry run coverage report -m
-        env:
-          CI: true
-
-  lint:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Upload test results as artifact
+        uses: actions/upload-artifact@v2
         with:
-          python-version: 3.12
-
-      - name: Install dependencies
-        run: |
-          python3 -m pip install --upgrade pip
-          pip3 install poetry
-          poetry install
-
-      - name: Check code formatting with Ruff
-        run: poetry run ruff format --check .
-
-      - name: Run Ruff linters
-        run: poetry run ruff check .
+          name: test-results
+          path: test-results
 ```
-
-где:
-
-- `poetry` -- управления зависимостями для языка программирования Python.
-- `coverage` -- формирование отчёта об уровне покрытия исходного кода.
-- `pytest` -- утилита для запуска тестов.
-- `ruff` -- утилита для форматирования и проверки стиля кодирования.
 
 Журнал работы процессора на примере `ADD`:
 
