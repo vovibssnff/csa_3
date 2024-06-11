@@ -17,7 +17,7 @@ func TestTranslateAndSimulate(t *testing.T) {
 	}{
 		{"testdata/hello.basm", "testdata/hello.json", "", "testdata/log.txt", "golden_hello.txt"},
 		{"testdata/cat.basm", "testdata/cat.json", "testdata/in_cat.txt", "testdata/log.txt", "golden_cat.txt"},
-		{"testdata/hello_user.basm", "testdata/hello_user.json", "testdata/in_cat.txt", "testdata/log.txt", "golden_hello_user.txt"},
+		{"testdata/hello_user.basm", "testdata/hello_user.json", "testdata/in_hello_user.txt", "testdata/log.txt", "golden_hello_user.txt"},
 		{"testdata/prob2.basm", "testdata/prob2.json", "", "testdata/log.txt", "golden_prob2.txt"},
 	}
 

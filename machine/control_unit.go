@@ -102,7 +102,11 @@ func (cu *ControlUnit) checkInterrupt() {
 		tick := sortedBuf[0]
 		char := cu.dataPath.portCtrl.iBuf[tick]
 		for addr, port := range cu.dataPath.portCtrl.isrMap {
-			if tick <= cu.curTick && port == cu.dataPath.portCtrl.iPort && cu.ei {
+			if tick < cu.curTick {
+				delete(cu.dataPath.portCtrl.isrMap, tick)
+				break
+			}
+			if tick == cu.curTick && port == cu.dataPath.portCtrl.iPort && cu.ei {
 				cu.dataPath.portCtrl.interruptionRequest(&cu.intCtrl, addr)
 				cu.dataPath.portCtrl.bus = char
 				break

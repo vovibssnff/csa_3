@@ -49,9 +49,9 @@ func simulation(code MachineCode, tokens map[int]int, limit int, out *string) (s
 	dp := NewDataPath(data, code.Ints, tokens, out)
 	cu := NewControlUnit(code.Ops, *dp)
 	for cu.instructionCounter < limit {
-		cu.decodeExecuteInstruction()
 		cu.checkInterrupt()
 		cu.handleInterrupt()
+		cu.decodeExecuteInstruction()
 		if cu.halted {
 			break
 		}
